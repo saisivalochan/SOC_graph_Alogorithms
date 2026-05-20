@@ -1,0 +1,14 @@
+# Don't commit local copies of copyrighted PDFs (e.g. CLRS)
+pdfs/*.pdf
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+
+# Logs
+*.log

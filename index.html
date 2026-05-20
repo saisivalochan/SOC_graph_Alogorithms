@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DSA in Action — explore, solve, optimize, master. A 7-week C++ DSA journey." />
+  <title>DSA in Action</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>" />
+</head>
+<body>
+  <header class="hero">
+    <nav class="navbar">
+      <a class="brand" href="index.html">⟁ DSA IN ACTION</a>
+      <div class="nav-links">
+        <a href="#weeks">WEEKS</a>
+        <a href="#references">REFERENCES</a>
+        <a href="#about">ABOUT</a>
+      </div>
+    </nav>
+    <div class="hero-content">
+      <div class="hero-eyebrow">DSA · IN ACTION</div>
+      <h1>ALGORITHMS UNLEASHED</h1>
+      <p>Navigate the maze of Data Structures &amp; Algorithms — one week at a time.</p>
+      <div class="tagline">EXPLORE<span>·</span>SOLVE<span>·</span>OPTIMIZE<span>·</span>MASTER</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num" id="stat-weeks">0</div>
+          <div class="stat-label">Weeks</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="stat-problems">0</div>
+          <div class="stat-label">Problems</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="stat-resources">0</div>
+          <div class="stat-label">Resources</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="weeks" class="section">
+      <h2><span class="emoji">⚡</span> Weekly Roadmap</h2>
+
+      <div class="start-here">
+        <div class="start-here-label">Start Here</div>
+        <p>I suggest watching the <a href="https://youtube.com/playlist?list=PLfqMhTWNBTe137I_EPQd34TsgV6IO55pt" target="_blank" rel="noopener noreferrer">Apna College C++ DSA Playlist</a> alongside these weeks. The videos build the intuition; the notes and problems below lock it in. Go week by week and don't skip the <span class="must-star">*</span> problems.</p>
+      </div>
+
+      <div class="weeks-list" id="weeks-list"></div>
+    </section>
+
+    <section id="references" class="section">
+      <h2><span class="emoji">⌬</span> References</h2>
+      <p class="section-sub">The core resources backing this curriculum. Bookmark these.</p>
+      <div class="references-grid" id="references-grid"></div>
+    </section>
+
+    <section id="about" class="section about-section">
+      <h2><span class="emoji">◈</span> About</h2>
+      <div class="about-card">
+        <p id="about-text">A structured 7-week curriculum covering modern C++ and the core data structures &amp; algorithms used in technical interviews. Every concept page includes a detailed write-up, executable C++ code, complexity analysis, common pitfalls, and a curated Apna College video lecture.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <div class="feature-title">7-Week Structure</div>
+          <div class="feature-desc">A progressive curriculum from C++ basics through Dynamic Programming, designed to compound week over week.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">◇</div>
+          <div class="feature-title">Detailed Notes</div>
+          <div class="feature-desc">Each concept gets a structured explanation, working C++ implementations, Big-O analysis, and common pitfalls.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">◎</div>
+          <div class="feature-title">Curated Problem Set</div>
+          <div class="feature-desc">177 problems drawn from Striver's DSA Sheet, NeetCode Blind 75, and the LeetCode top-interview list.</div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">▶</div>
+          <div class="feature-title">Video Lectures</div>
+          <div class="feature-desc">Each concept links to a hand-picked lecture from Apna College's C++ DSA series by Shradha Khapra Ma'am.</div>
+        </div>
+      </div>
+
+      <div class="approach-card">
+        <div class="approach-label">Recommended Approach</div>
+        <p>Each topic page is paired with 20+ canonical problems. Items marked <span class="must-star">*</span> are essential — solve these first to internalize the pattern, then work through the remaining problems for depth and pattern recognition. Aim for one week per week; the curriculum is designed to be sequential.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Curated by <strong id="author-name">SaiSivaLochan</strong> · DSA in Action · <span id="year"></span></p>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
