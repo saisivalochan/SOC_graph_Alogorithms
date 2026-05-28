@@ -7892,37 +7892,1366 @@ int firstConflict(int n, vector<vector<int>>& adj) {
       concepts: [
         {
           name: "Cycle Detection (directed & undirected)",
-          explanation: "Detailed notes coming soon. Undirected: a non-parent visited neighbour means a cycle. Directed: a back-edge to a gray (in-progress) vertex means a cycle.",
+          explanation: `A cycle in a graph is a closed walk that visits no edge twice — equivalently, a path that starts and ends at the same vertex. Detecting cycles is essential because many algorithms only work on acyclic graphs (topological sort needs a DAG, MST is only defined on acyclic spanning subgraphs, scheduling without circular dependencies needs to know there are none).
+
+The algorithm differs between UNDIRECTED and DIRECTED graphs because what "cycle" means differs.
+
+## Undirected graph — DFS with parent tracking
+
+In an undirected graph, every edge is two-way. When DFS visits u and looks at neighbour v, finding v VISITED could mean either "v is u's direct parent in the DFS tree" (just the back-edge of the same edge — not a cycle) or "v is some other ancestor / sibling" (a real cycle).
+
+Track the parent; ignore that one back-edge.
+
+bool dfsU(int u, int parent, vector<vector<int>>& adj, vector<bool>& vis) {
+    vis[u] = true;
+    for (int v : adj[u]) {
+        if (!vis[v]) {
+            if (dfsU(v, u, adj, vis)) return true;
+        } else if (v != parent) {
+            return true;                       // visited & not parent → cycle
+        }
+    }
+    return false;
+}
+
+bool hasCycleUndirected(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    for (int s = 0; s < n; s++)
+        if (!vis[s] && dfsU(s, -1, adj, vis)) return true;
+    return false;
+}
+
+O(V + E).
+
+## Undirected — DSU alternative
+
+For each edge (u, v): if u and v are already in the same component, adding this edge would form a cycle. Otherwise, union the two components. We'll cover DSU mechanics in lesson 6.4; here's the punchline:
+
+bool cycleViaDSU(int n, vector<pair<int,int>>& edges) {
+    DSU dsu(n);
+    for (auto& [u, v] : edges) {
+        if (dsu.find(u) == dsu.find(v)) return true;
+        dsu.unite(u, v);
+    }
+    return false;
+}
+
+Same O((V + E) α(n)). Useful when edges arrive online.
+
+## Directed graph — 3-colour DFS
+
+In a directed graph, a cycle is a back-edge to a vertex currently ON the recursion stack. Use three states:
+
+WHITE (0) — unvisited
+GRAY  (1) — visited but recursion hasn't returned yet (i.e. on the call stack)
+BLACK (2) — visited and fully processed
+
+A directed cycle = an edge from any vertex to a GRAY vertex.
+
+enum { WHITE = 0, GRAY = 1, BLACK = 2 };
+
+bool dfsD(int u, vector<vector<int>>& adj, vector<int>& color) {
+    color[u] = GRAY;
+    for (int v : adj[u]) {
+        if (color[v] == GRAY) return true;
+        if (color[v] == WHITE && dfsD(v, adj, color)) return true;
+    }
+    color[u] = BLACK;
+    return false;
+}
+
+Two-colour (just visited / unvisited) is NOT enough — you'd flag edges to finished branches as cycles when they're really just cross-edges.
+
+## Directed — Kahn's algorithm (BFS topo)
+
+Alternative approach: try to topologically sort the graph. If you can't, there's a cycle.
+
+vector<int> indeg(n, 0);
+for (int u = 0; u < n; u++) for (int v : adj[u]) indeg[v]++;
+queue<int> q;
+for (int u = 0; u < n; u++) if (indeg[u] == 0) q.push(u);
+int processed = 0;
+while (!q.empty()) {
+    int u = q.front(); q.pop();
+    processed++;
+    for (int v : adj[u]) if (--indeg[v] == 0) q.push(v);
+}
+bool hasCycle = (processed != n);
+
+If Kahn's processes fewer than n vertices, the unprocessed ones form a cycle. We'll cover Kahn's in detail in the next lesson.
+
+## Why directed and undirected differ
+
+In undirected, an edge (u, v) is the SAME thing as (v, u). The "back-edge" from v to u in DFS is just that same edge re-encountered, not a cycle. You need to skip exactly that one.
+
+In directed, edges have orientations. An edge from v to u, when u is an ancestor of v, is a different edge from the tree edge (u → v) and absolutely indicates a cycle.
+
+## Locating the cycle (not just detecting)
+
+For undirected: when you find the back-edge, walk the parent chain from u back to v.
+
+For directed (3-colour): when you hit a GRAY vertex v from u, walk the recursion stack from u back to v to extract the cycle.
+
+For Kahn's: the vertices with non-zero indegree after the algorithm are exactly those in cycles.
+
+## When you actually NEED cycle detection
+
+- Validating that a graph is a DAG before running topological sort.
+- Detecting deadlock in resource-allocation graphs.
+- Checking course prerequisites (Course Schedule problem).
+- Build-system / package-manager dependency checks.
+- Verifying that a tree is actually a tree (n-1 edges, connected, no cycle).
+
+## Complexity summary
+
+| Method                        | Complexity   | Works on              |
+|-------------------------------|--------------|------------------------|
+| Undirected DFS + parent       | O(V + E)     | Undirected             |
+| Undirected DSU                | O((V+E)α(n)) | Undirected (edge stream)|
+| Directed 3-colour DFS         | O(V + E)     | Directed               |
+| Directed Kahn's (topo)        | O(V + E)     | Directed               |`,
+          codeBlocks: [
+            {
+              title: "Undirected cycle detection (DFS with parent)",
+              code: `bool dfsU(int u, int parent, vector<vector<int>>& adj, vector<bool>& vis) {
+    vis[u] = true;
+    for (int v : adj[u]) {
+        if (!vis[v]) {
+            if (dfsU(v, u, adj, vis)) return true;
+        } else if (v != parent) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool hasCycleUndirected(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    for (int s = 0; s < n; s++)
+        if (!vis[s] && dfsU(s, -1, adj, vis)) return true;
+    return false;
+}`
+            },
+            {
+              title: "Directed cycle detection (3-colour DFS)",
+              code: `enum { WHITE = 0, GRAY = 1, BLACK = 2 };
+
+bool dfsD(int u, vector<vector<int>>& adj, vector<int>& color) {
+    color[u] = GRAY;
+    for (int v : adj[u]) {
+        if (color[v] == GRAY) return true;
+        if (color[v] == WHITE && dfsD(v, adj, color)) return true;
+    }
+    color[u] = BLACK;
+    return false;
+}
+
+bool hasCycleDirected(int n, vector<vector<int>>& adj) {
+    vector<int> color(n, WHITE);
+    for (int u = 0; u < n; u++)
+        if (color[u] == WHITE && dfsD(u, adj, color)) return true;
+    return false;
+}`
+            },
+            {
+              title: "Directed cycle detection via Kahn's algorithm",
+              code: `bool hasCycleKahn(int n, vector<vector<int>>& adj) {
+    vector<int> indeg(n, 0);
+    for (int u = 0; u < n; u++) for (int v : adj[u]) indeg[v]++;
+    queue<int> q;
+    for (int u = 0; u < n; u++) if (indeg[u] == 0) q.push(u);
+    int processed = 0;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        processed++;
+        for (int v : adj[u]) if (--indeg[v] == 0) q.push(v);
+    }
+    return processed != n;
+}`
+            },
+            {
+              title: "Course Schedule — directly an application",
+              code: `bool canFinish(int numCourses, vector<vector<int>>& prereqs) {
+    vector<vector<int>> adj(numCourses);
+    vector<int> indeg(numCourses, 0);
+    for (auto& p : prereqs) {
+        adj[p[1]].push_back(p[0]);
+        indeg[p[0]]++;
+    }
+    queue<int> q;
+    for (int u = 0; u < numCourses; u++) if (indeg[u] == 0) q.push(u);
+    int done = 0;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        done++;
+        for (int v : adj[u]) if (--indeg[v] == 0) q.push(v);
+    }
+    return done == numCourses;
+}`
+            },
+            {
+              title: "Extract the actual cycle (undirected) — walk parents",
+              code: `int cycleStart = -1, cycleEnd = -1;
+vector<int> parent;
+
+bool dfsCycleU(int u, int par, vector<vector<int>>& adj, vector<int>& color) {
+    color[u] = GRAY;
+    for (int v : adj[u]) {
+        if (color[v] == WHITE) {
+            parent[v] = u;
+            if (dfsCycleU(v, u, adj, color)) return true;
+        } else if (v != par) {
+            cycleStart = v; cycleEnd = u;
+            return true;
+        }
+    }
+    color[u] = BLACK;
+    return false;
+}
+
+vector<int> findCycleU(int n, vector<vector<int>>& adj) {
+    parent.assign(n, -1);
+    vector<int> color(n, WHITE);
+    for (int s = 0; s < n; s++)
+        if (color[s] == WHITE && dfsCycleU(s, -1, adj, color)) break;
+    if (cycleStart == -1) return {};
+    vector<int> cyc;
+    for (int v = cycleEnd; v != cycleStart; v = parent[v]) cyc.push_back(v);
+    cyc.push_back(cycleStart);
+    reverse(cyc.begin(), cyc.end());
+    return cyc;
+}`
+            }
+          ],
+          complexity: { time: "O(V + E)", space: "O(V) for colour / visited / parent arrays + O(V) DFS stack" },
+          keyPoints: [
+            "Undirected: DFS with parent tracking. Visited & not parent → cycle.",
+            "Directed: 3-colour DFS. Edge to GRAY vertex → cycle (back edge).",
+            "Two-colour visited-only is INSUFFICIENT for directed graphs (mis-flags cross edges as cycles).",
+            "Kahn's algorithm (topo sort) detects directed cycles: if fewer than n vertices processed, there's a cycle.",
+            "Undirected DSU: edge (u,v) where u and v already share a root → cycle.",
+            "Always loop over EVERY uncoloured/unvisited vertex — disconnected components matter.",
+            "To EXTRACT the cycle, track parents and walk the chain from the offending edge.",
+            "Cycle detection is required before any DAG-only algorithm (topo sort, longest path on DAG, scheduler)."
+          ],
+          pitfalls: [
+            "Undirected DFS without parent check — every edge looks like a cycle.",
+            "Multi-edges between same pair of vertices — the parent check incorrectly skips real cycles. Use edge IDs instead.",
+            "Directed cycle detection with 'visited bool' instead of three colours — wrong on cross edges.",
+            "Running DFS only from vertex 0 — disconnected pieces never get checked.",
+            "Confusing 'has cycle' with 'is a tree' — a tree has no cycles AND is connected.",
+            "Self-loops (vertex with edge to itself) — detected by both algorithms; ensure your code doesn't special-case them."
+          ],
           videoId: "hGscdp38JKM",
           videoSearch: "cycle detection graph"
         },
         {
           name: "Topological Sort (Kahn's + DFS)",
-          explanation: "Detailed notes coming soon. An ordering of a DAG's vertices so that every edge u→v has u before v. Kahn's uses indegree+queue; DFS variant uses finish-time.",
+          explanation: `A topological ordering of a directed graph is a linear arrangement of its vertices such that for every directed edge u → v, u appears BEFORE v in the order. Intuitively: "do all prerequisites before the thing that needs them". Such an ordering exists IFF the graph is a DAG (directed acyclic graph) — cycles make it impossible.
+
+Topo sort is the engine for course scheduling, build-system dependency resolution, package install order, deadlock detection, and many DP-on-DAG algorithms.
+
+## Two standard algorithms
+
+**Kahn's algorithm** (BFS-based, uses indegrees) and **DFS-based** (uses post-order finish times). Both run in O(V + E). Pick whichever feels natural.
+
+## Kahn's algorithm — the BFS approach
+
+Idea: any vertex with indegree 0 has no prerequisites, so put it first. Removing it might reduce other indegrees to 0; those become next. Repeat.
+
+1. Compute indegree of every vertex.
+2. Push every indegree-0 vertex into a queue.
+3. Pop u, append to result, "remove" u by decrementing the indegrees of all its neighbours; push any that hit 0.
+4. If you appended fewer than V vertices, the graph has a cycle.
+
+vector<int> indeg(n, 0);
+for (int u = 0; u < n; u++) for (int v : adj[u]) indeg[v]++;
+
+queue<int> q;
+for (int u = 0; u < n; u++) if (indeg[u] == 0) q.push(u);
+
+vector<int> order;
+while (!q.empty()) {
+    int u = q.front(); q.pop();
+    order.push_back(u);
+    for (int v : adj[u]) if (--indeg[v] == 0) q.push(v);
+}
+
+if ((int)order.size() != n) { // cycle detected
+    // ... handle cycle ...
+}
+
+## DFS-based topo sort
+
+Idea: do DFS; record each vertex AFTER all its descendants are processed (post-order). Reverse the result.
+
+void dfs(int u, vector<vector<int>>& adj, vector<bool>& vis, vector<int>& post) {
+    vis[u] = true;
+    for (int v : adj[u]) if (!vis[v]) dfs(v, adj, vis, post);
+    post.push_back(u);
+}
+
+vector<int> topoSort(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    vector<int> post;
+    for (int u = 0; u < n; u++) if (!vis[u]) dfs(u, adj, vis, post);
+    reverse(post.begin(), post.end());
+    return post;
+}
+
+This version assumes the graph is a DAG. To detect cycles, layer in 3-colour DFS (previous lesson).
+
+## When ordering isn't unique
+
+A graph can have MANY valid topological orderings. If there are several indegree-0 vertices at any step, Kahn's can pick any of them. To get the LEXICOGRAPHICALLY smallest order, use a priority queue (min-heap) instead of a regular queue.
+
+priority_queue<int, vector<int>, greater<int>> pq;
+// ... rest of Kahn's identical
+
+## Kahn's vs DFS — which to use
+
+| Property                       | Kahn's              | DFS                 |
+|--------------------------------|---------------------|---------------------|
+| Detects cycles natively        | Yes                 | Needs 3-colour      |
+| Lexicographic smallest order   | Easy (use min-heap) | Harder              |
+| Iterative (no recursion)       | Yes                 | No (or rewrite)     |
+| Natural for layer-by-layer     | Yes                 | No                  |
+| Natural for longest-path DP    | Either              | Either              |
+
+Kahn's is often the better choice for problems that ask about ordering directly.
+
+## Applications
+
+- **Course Schedule II** — actually return the order.
+- **Alien Dictionary** — extract character ordering from sorted word list, then topo sort.
+- **Build System** — compile in dependency order.
+- **Recipes** — make sure all ingredients are prepared before the dish.
+- **Longest path in a DAG** — process in topo order, dp[v] = max(dp[u] + w) for all incoming u.
+- **Number of paths from s to t in a DAG** — process in topo order, dp[v] = sum of dp[u] for all incoming u.
+
+## On a cyclic graph
+
+Kahn's reports a cycle (fewer than V processed). DFS-without-cycle-check returns a bogus order; pair it with 3-colour DFS or use Kahn's.
+
+## Complexity
+
+O(V + E) time and O(V) space (queue + indegree array, or DFS stack + post-order list). Same as plain BFS/DFS — topo sort is essentially decorated BFS/DFS.`,
+          codeBlocks: [
+            {
+              title: "Kahn's algorithm",
+              code: `vector<int> topoKahn(int n, vector<vector<int>>& adj) {
+    vector<int> indeg(n, 0);
+    for (int u = 0; u < n; u++) for (int v : adj[u]) indeg[v]++;
+    queue<int> q;
+    for (int u = 0; u < n; u++) if (indeg[u] == 0) q.push(u);
+    vector<int> order;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        order.push_back(u);
+        for (int v : adj[u]) if (--indeg[v] == 0) q.push(v);
+    }
+    if ((int)order.size() != n) return {};       // cycle → no topo order
+    return order;
+}`
+            },
+            {
+              title: "DFS-based topo sort",
+              code: `void dfsTopo(int u, vector<vector<int>>& adj, vector<bool>& vis, vector<int>& post) {
+    vis[u] = true;
+    for (int v : adj[u]) if (!vis[v]) dfsTopo(v, adj, vis, post);
+    post.push_back(u);
+}
+
+vector<int> topoDFS(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    vector<int> post;
+    for (int u = 0; u < n; u++) if (!vis[u]) dfsTopo(u, adj, vis, post);
+    reverse(post.begin(), post.end());
+    return post;
+}`
+            },
+            {
+              title: "Lexicographically smallest topo order (Kahn's + min-heap)",
+              code: `vector<int> topoLex(int n, vector<vector<int>>& adj) {
+    vector<int> indeg(n, 0);
+    for (int u = 0; u < n; u++) for (int v : adj[u]) indeg[v]++;
+    priority_queue<int, vector<int>, greater<int>> pq;
+    for (int u = 0; u < n; u++) if (indeg[u] == 0) pq.push(u);
+    vector<int> order;
+    while (!pq.empty()) {
+        int u = pq.top(); pq.pop();
+        order.push_back(u);
+        for (int v : adj[u]) if (--indeg[v] == 0) pq.push(v);
+    }
+    if ((int)order.size() != n) return {};
+    return order;
+}`
+            },
+            {
+              title: "Course Schedule II — return the order or {} if impossible",
+              code: `vector<int> findOrder(int numCourses, vector<vector<int>>& prereqs) {
+    vector<vector<int>> adj(numCourses);
+    vector<int> indeg(numCourses, 0);
+    for (auto& p : prereqs) {
+        adj[p[1]].push_back(p[0]);
+        indeg[p[0]]++;
+    }
+    queue<int> q;
+    for (int u = 0; u < numCourses; u++) if (indeg[u] == 0) q.push(u);
+    vector<int> order;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        order.push_back(u);
+        for (int v : adj[u]) if (--indeg[v] == 0) q.push(v);
+    }
+    return (int)order.size() == numCourses ? order : vector<int>{};
+}`
+            },
+            {
+              title: "Longest path in a DAG via topo order",
+              code: `int longestPath(int n, vector<vector<pair<int,int>>>& adj) {   // adj[u] = (v, w)
+    // Build indegrees and flat-edge view
+    vector<int> indeg(n, 0);
+    for (int u = 0; u < n; u++) for (auto& [v, w] : adj[u]) indeg[v]++;
+    queue<int> q;
+    for (int u = 0; u < n; u++) if (indeg[u] == 0) q.push(u);
+    vector<int> dp(n, 0);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (auto& [v, w] : adj[u]) {
+            dp[v] = max(dp[v], dp[u] + w);
+            if (--indeg[v] == 0) q.push(v);
+        }
+    }
+    return *max_element(dp.begin(), dp.end());
+}`
+            },
+            {
+              title: "Alien Dictionary — extract character order via topo sort",
+              code: `string alienOrder(vector<string>& words) {
+    unordered_map<char, set<char>> adj;
+    unordered_map<char, int> indeg;
+    for (auto& w : words) for (char c : w) indeg[c] = 0;
+    for (int i = 0; i + 1 < (int)words.size(); i++) {
+        string& a = words[i];
+        string& b = words[i + 1];
+        int j = 0, L = min(a.size(), b.size());
+        while (j < L && a[j] == b[j]) j++;
+        if (j == L) { if (a.size() > b.size()) return ""; continue; }
+        if (!adj[a[j]].count(b[j])) { adj[a[j]].insert(b[j]); indeg[b[j]]++; }
+    }
+    queue<char> q;
+    for (auto& [c, d] : indeg) if (d == 0) q.push(c);
+    string out;
+    while (!q.empty()) {
+        char u = q.front(); q.pop();
+        out.push_back(u);
+        for (char v : adj[u]) if (--indeg[v] == 0) q.push(v);
+    }
+    return (int)out.size() == (int)indeg.size() ? out : "";
+}`
+            }
+          ],
+          complexity: { time: "O(V + E)", space: "O(V) for indegree/queue/post array + O(V) DFS stack" },
+          keyPoints: [
+            "Topo order exists IFF the graph is a DAG. Cycles make it impossible.",
+            "Kahn's: BFS by indegree. Push indegree-0 vertices; decrement neighbours; push new zeros.",
+            "DFS: process post-order, then REVERSE to get topo order.",
+            "Kahn's detects cycles natively (fewer than V processed → cycle).",
+            "Multiple valid orders exist when there are several indegree-0 vertices at once.",
+            "For lexicographically smallest order, use a min-heap instead of a queue in Kahn's.",
+            "Topo sort is the prerequisite for longest-path-on-DAG and DP-on-DAG.",
+            "Course Schedule, Alien Dictionary, Task Scheduling are all topo-sort problems."
+          ],
+          pitfalls: [
+            "DFS topo sort on a graph with cycles — silent garbage output; cycle-check separately.",
+            "Forgetting to reverse the post-order in the DFS version.",
+            "Off-by-one in indegree initialisation — make sure every vertex 0..n-1 is represented.",
+            "Multi-edges between u and v increase indegree multiple times — usually fine, but watch out.",
+            "Returning empty vector for 'no cycle' vs 'cycle' inconsistently — pick a sentinel and document it.",
+            "Using regular queue when problem asks for lex-smallest order — produces a valid but wrong-priority order."
+          ],
           videoId: "Yh5o_PSK9to",
           videoSearch: "topological sort kahn algorithm"
         },
         {
           name: "Dijkstra's Shortest Path",
-          explanation: "Detailed notes coming soon. Single-source shortest paths in O((V+E) log V) using a min-heap. Requires non-negative edge weights.",
+          explanation: `Dijkstra's algorithm finds the shortest path from a single source to every other vertex in a graph with NON-NEGATIVE edge weights. Runs in O((V + E) log V) with a binary heap (the everyday implementation). For unweighted graphs, BFS does the same job in O(V + E); for graphs with NEGATIVE weights, you need Bellman-Ford (next lesson).
+
+This is one of the most important algorithms in all of computer science — it underpins every routing protocol, every map app, every shortest-path query in production systems.
+
+## The greedy idea
+
+Maintain dist[v] = best known distance from source to v (start dist[src] = 0, everything else ∞).
+
+Repeatedly: pick the unfinalised vertex with the smallest dist, FINALISE it, then RELAX its outgoing edges (update dist[neighbour] if a shorter path through this vertex was found).
+
+Once a vertex is finalised, its dist is correct — no future relaxation can improve it. This is why negative weights break the algorithm: a later edge with negative weight could improve an "already finalised" distance.
+
+## With a priority queue — the standard implementation
+
+A min-heap of (distance, vertex) pairs gives O(log V) per extract-min. Each edge is relaxed at most once, costing O(log V) per relaxation. Total: O((V + E) log V).
+
+vector<long long> dist(n, LLONG_MAX);
+dist[src] = 0;
+priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;
+pq.push({0, src});
+while (!pq.empty()) {
+    auto [d, u] = pq.top(); pq.pop();
+    if (d > dist[u]) continue;                    // stale entry, ignore
+    for (auto [v, w] : adj[u]) {
+        if (dist[u] + w < dist[v]) {
+            dist[v] = dist[u] + w;
+            pq.push({dist[v], v});
+        }
+    }
+}
+
+The "if (d > dist[u]) continue;" is the lazy-delete trick — we don't actually update the old heap entry; we just push a new one and skip the stale one when popped.
+
+## Why non-negative weights?
+
+Dijkstra finalises the vertex with smallest dist FIRST. The argument is: any other path to that vertex must go through one of the unfinalised vertices, all of which have larger dist values. Adding more non-negative edge weights can only INCREASE the path length, so the direct dist is optimal.
+
+With a negative edge, you could go through a longer-prefix vertex and end up with a shorter total — breaking the invariant.
+
+## Reconstructing paths
+
+Add a parent array; update parent[v] = u whenever you relax dist[v] via u.
+
+vector<int> parent(n, -1);
+// inside the relaxation:
+parent[v] = u;
+
+To get the path from src to t:
+vector<int> path;
+for (int cur = t; cur != -1; cur = parent[cur]) path.push_back(cur);
+reverse(path.begin(), path.end());
+
+## Dense graph variant — O(V²)
+
+For very dense graphs (E close to V²), a plain array-based extract-min beats the priority queue. Find the min by scanning all V vertices; relax; repeat V times.
+
+O(V² + E) = O(V²) for dense, much better than O(V² log V) when E ≈ V².
+
+## When NOT to use Dijkstra
+
+- Negative weights → Bellman-Ford (O(VE)) or SPFA.
+- Unweighted graph → plain BFS (faster constants).
+- 0-1 weights → 0-1 BFS with deque (O(V+E)).
+- All-pairs shortest paths → Floyd-Warshall (O(V³)) if V is small.
+- Negative-weight CYCLES → no shortest paths exist; Bellman-Ford detects this.
+
+## Common applications
+
+- **Network routing** (OSPF, IS-IS).
+- **GPS navigation / map apps**.
+- **Network Delay Time** — Dijkstra from source, return max distance.
+- **Cheapest Flights Within K Stops** — Dijkstra with an extra state (stops used).
+- **Path With Minimum Effort** — Dijkstra where "distance" = max edge weight on path.
+- **Swim in Rising Water** — Dijkstra on grid with terrain heights.
+
+## Variants worth knowing
+
+- **A*** — Dijkstra + heuristic. Same algorithm with priority = dist + h(v).
+- **Bidirectional Dijkstra** — run from both ends simultaneously.
+- **Dial's algorithm** — for small integer weights, replace heap with buckets.`,
+          codeBlocks: [
+            {
+              title: "Dijkstra with min-heap (the everyday version)",
+              code: `vector<long long> dijkstra(int n, int src, vector<vector<pair<int,int>>>& adj) {
+    vector<long long> dist(n, LLONG_MAX);
+    dist[src] = 0;
+    priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;
+    pq.push({0, src});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d > dist[u]) continue;
+        for (auto& [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}`
+            },
+            {
+              title: "Dijkstra with path reconstruction",
+              code: `pair<vector<long long>, vector<int>> dijkstraPath(int n, int src, vector<vector<pair<int,int>>>& adj) {
+    vector<long long> dist(n, LLONG_MAX);
+    vector<int> parent(n, -1);
+    dist[src] = 0;
+    priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;
+    pq.push({0, src});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d > dist[u]) continue;
+        for (auto& [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                parent[v] = u;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return {dist, parent};
+}
+
+vector<int> reconstruct(int t, vector<int>& parent) {
+    vector<int> p;
+    for (int cur = t; cur != -1; cur = parent[cur]) p.push_back(cur);
+    reverse(p.begin(), p.end());
+    return p;
+}`
+            },
+            {
+              title: "Dense-graph Dijkstra — O(V²)",
+              code: `vector<long long> dijkstraDense(int n, int src, vector<vector<int>>& w) {
+    vector<long long> dist(n, LLONG_MAX);
+    vector<bool> used(n, false);
+    dist[src] = 0;
+    for (int i = 0; i < n; i++) {
+        int u = -1;
+        for (int j = 0; j < n; j++)
+            if (!used[j] && (u == -1 || dist[j] < dist[u])) u = j;
+        if (dist[u] == LLONG_MAX) break;
+        used[u] = true;
+        for (int v = 0; v < n; v++) {
+            if (w[u][v] != INT_MAX && dist[u] + w[u][v] < dist[v])
+                dist[v] = dist[u] + w[u][v];
+        }
+    }
+    return dist;
+}`
+            },
+            {
+              title: "Network Delay Time — Dijkstra application",
+              code: `int networkDelayTime(vector<vector<int>>& times, int n, int k) {
+    vector<vector<pair<int,int>>> adj(n + 1);
+    for (auto& t : times) adj[t[0]].push_back({t[1], t[2]});
+    auto dist = dijkstra(n + 1, k, adj);
+    long long maxD = 0;
+    for (int i = 1; i <= n; i++) {
+        if (dist[i] == LLONG_MAX) return -1;
+        maxD = max(maxD, dist[i]);
+    }
+    return (int)maxD;
+}`
+            },
+            {
+              title: "Path With Minimum Effort — Dijkstra where 'distance' is max edge weight",
+              code: `int minimumEffortPath(vector<vector<int>>& h) {
+    int R = h.size(), C = h[0].size();
+    vector<vector<int>> dist(R, vector<int>(C, INT_MAX));
+    dist[0][0] = 0;
+    priority_queue<tuple<int,int,int>, vector<tuple<int,int,int>>, greater<>> pq;
+    pq.push({0, 0, 0});
+    const int dr[] = {-1, 1, 0, 0}, dc[] = {0, 0,-1, 1};
+    while (!pq.empty()) {
+        auto [d, r, c] = pq.top(); pq.pop();
+        if (d > dist[r][c]) continue;
+        if (r == R - 1 && c == C - 1) return d;
+        for (int k = 0; k < 4; k++) {
+            int nr = r + dr[k], nc = c + dc[k];
+            if (nr<0 || nr>=R || nc<0 || nc>=C) continue;
+            int nd = max(d, abs(h[nr][nc] - h[r][c]));
+            if (nd < dist[nr][nc]) { dist[nr][nc] = nd; pq.push({nd, nr, nc}); }
+        }
+    }
+    return 0;
+}`
+            }
+          ],
+          complexity: { time: "Min-heap: O((V + E) log V); array: O(V²)", space: "O(V) for dist + O(E) heap entries in the worst case" },
+          keyPoints: [
+            "Single-source shortest paths in non-negative weighted graphs.",
+            "Greedy: finalise the closest unfinalised vertex, relax its outgoing edges, repeat.",
+            "Priority queue (min-heap of (dist, vertex)) gives O((V + E) log V).",
+            "Lazy delete trick: push new entries on relaxation, skip stale ones on pop.",
+            "DOES NOT work with negative weights — switch to Bellman-Ford or SPFA.",
+            "For unweighted graphs, use plain BFS (faster constants); for 0-1 weights, use 0-1 BFS with a deque.",
+            "Track parent[v] = u during relaxation to reconstruct the actual path.",
+            "Variants: A* (heuristic), bidirectional, Dial's (small-weight buckets)."
+          ],
+          pitfalls: [
+            "Using int instead of long long for distances — easy overflow on graphs with large weights.",
+            "Forgetting the 'if (d > dist[u]) continue;' guard — TLE on dense graphs because of stale entries.",
+            "Pushing to the priority queue before relaxation succeeds — wrong order; relax first, then push.",
+            "Running Dijkstra on a graph with even one negative edge — silently wrong answers.",
+            "Initialising dist to 0 instead of INT_MAX/LLONG_MAX — every vertex looks like the source.",
+            "Forgetting that A* needs an ADMISSIBLE heuristic (never overestimates) — otherwise wrong shortest path."
+          ],
           videoId: "SnZ2SQARTVI",
           videoSearch: "dijkstra shortest path"
         },
         {
           name: "Bellman-Ford",
-          explanation: "Detailed notes coming soon. Single-source shortest paths in O(V·E), handles negative weights, detects negative-weight cycles.",
+          explanation: `Bellman-Ford solves the same problem as Dijkstra — single-source shortest paths — but it handles NEGATIVE edge weights. The trade-off is speed: it runs in O(V · E) instead of O((V+E) log V). It also DETECTS negative-weight cycles, which is a question Dijkstra can't even ask.
+
+Use Bellman-Ford when (a) weights can be negative, (b) you need to detect negative cycles, or (c) you need a simple algorithm that doesn't depend on a priority queue. Otherwise Dijkstra wins.
+
+## The algorithm
+
+Initialise dist[src] = 0, everything else ∞. Then repeat V-1 times: for EVERY edge (u, v, w), if dist[u] + w < dist[v], update dist[v] = dist[u] + w. After V-1 passes, all shortest paths are final.
+
+vector<long long> dist(n, LLONG_MAX);
+dist[src] = 0;
+for (int i = 0; i < n - 1; i++) {
+    for (auto& [u, v, w] : edges) {
+        if (dist[u] != LLONG_MAX && dist[u] + w < dist[v])
+            dist[v] = dist[u] + w;
+    }
+}
+
+## Why V-1 passes?
+
+The shortest path from src to ANY vertex has at most V-1 edges (else it would visit a vertex twice → cycle). In each pass, we "extend" shortest paths by one edge. After V-1 passes, every shortest path has been fully reconstructed.
+
+## Negative cycle detection
+
+After the V-1 passes are done, do ONE MORE pass. If any edge can still be relaxed, that path goes through a negative cycle — there is no finite shortest path along it.
+
+for (auto& [u, v, w] : edges) {
+    if (dist[u] != LLONG_MAX && dist[u] + w < dist[v])
+        return "negative cycle detected";
+}
+
+To find WHICH vertices are affected, mark them and propagate.
+
+## Bellman-Ford vs Dijkstra side-by-side
+
+| Property                  | Dijkstra         | Bellman-Ford              |
+|---------------------------|------------------|---------------------------|
+| Time                      | O((V+E) log V)   | O(V·E)                    |
+| Negative edges OK?        | No               | Yes                       |
+| Negative-cycle detect?    | No               | Yes                       |
+| Data structure            | Priority queue   | Edge list                 |
+| Common use                | Most cases       | When weights can be neg.  |
+
+For E = O(V²) (dense), Bellman-Ford is O(V³) — usually too slow for V > 500.
+
+## SPFA (Shortest Path Faster Algorithm) — speed-up
+
+Bellman-Ford touches every edge V-1 times even if most edges aren't useful in later passes. SPFA optimises this with a queue: relax only from vertices whose dist was just improved.
+
+queue<int> q;
+vector<bool> inQueue(n, false);
+dist[src] = 0; q.push(src); inQueue[src] = true;
+while (!q.empty()) {
+    int u = q.front(); q.pop(); inQueue[u] = false;
+    for (auto& [v, w] : adj[u]) {
+        if (dist[u] + w < dist[v]) {
+            dist[v] = dist[u] + w;
+            if (!inQueue[v]) { q.push(v); inQueue[v] = true; }
+        }
+    }
+}
+
+SPFA is O(V·E) worst case (same as Bellman-Ford) but often much faster in practice. It also detects negative cycles (if a vertex enters the queue ≥ V times, there's a negative cycle reachable from src).
+
+## Common applications
+
+- **Currency arbitrage** — find a cycle of currency conversions whose product > 1 (take logs → negative cycle).
+- **Cheapest Flights Within K Stops** — Bellman-Ford with K+1 passes naturally gives "at most K stops".
+- **Graphs from physics / chemistry** with energy differences as weights (can be negative).
+- **Distance Vector routing protocols** (RIP) — distributed Bellman-Ford.
+
+## What about all-pairs?
+
+For ALL-pairs shortest paths with negative weights (but no negative cycles), Floyd-Warshall is O(V³) and works on edge weights including negatives.
+
+## Reconstructing paths
+
+Same trick as Dijkstra: track parent[v] = u whenever you relax dist[v].
+
+## Edge cases
+
+- An unreachable vertex keeps dist = ∞ forever.
+- A vertex INSIDE a negative cycle has -∞ shortest distance.
+- A vertex reachable FROM a negative cycle also has -∞ (you can loop around the cycle arbitrarily many times before continuing).
+
+After detection, set dist[v] = -∞ for all vertices reachable from any "still-relaxable" vertex.`,
+          codeBlocks: [
+            {
+              title: "Bellman-Ford — edge-list version",
+              code: `vector<long long> bellmanFord(int n, int src, vector<tuple<int,int,int>>& edges) {
+    vector<long long> dist(n, LLONG_MAX);
+    dist[src] = 0;
+    for (int i = 0; i < n - 1; i++) {
+        for (auto& [u, v, w] : edges) {
+            if (dist[u] != LLONG_MAX && dist[u] + w < dist[v])
+                dist[v] = dist[u] + w;
+        }
+    }
+    return dist;
+}`
+            },
+            {
+              title: "Detect negative-weight cycle",
+              code: `bool hasNegativeCycle(int n, int src, vector<tuple<int,int,int>>& edges) {
+    vector<long long> dist(n, LLONG_MAX);
+    dist[src] = 0;
+    for (int i = 0; i < n - 1; i++) {
+        for (auto& [u, v, w] : edges) {
+            if (dist[u] != LLONG_MAX && dist[u] + w < dist[v])
+                dist[v] = dist[u] + w;
+        }
+    }
+    // One more pass: any relaxation = negative cycle
+    for (auto& [u, v, w] : edges) {
+        if (dist[u] != LLONG_MAX && dist[u] + w < dist[v]) return true;
+    }
+    return false;
+}`
+            },
+            {
+              title: "Cheapest Flights Within K Stops — K+1 passes",
+              code: `int cheapestFlights(int n, vector<vector<int>>& flights, int src, int dst, int K) {
+    vector<int> dist(n, INT_MAX);
+    dist[src] = 0;
+    for (int i = 0; i <= K; i++) {
+        vector<int> next = dist;
+        for (auto& f : flights) {
+            int u = f[0], v = f[1], w = f[2];
+            if (dist[u] != INT_MAX && dist[u] + w < next[v])
+                next[v] = dist[u] + w;
+        }
+        dist = next;
+    }
+    return dist[dst] == INT_MAX ? -1 : dist[dst];
+}`
+            },
+            {
+              title: "SPFA — usually faster than plain Bellman-Ford",
+              code: `vector<long long> spfa(int n, int src, vector<vector<pair<int,int>>>& adj) {
+    vector<long long> dist(n, LLONG_MAX);
+    dist[src] = 0;
+    vector<bool> inQ(n, false);
+    queue<int> q;
+    q.push(src); inQ[src] = true;
+    while (!q.empty()) {
+        int u = q.front(); q.pop(); inQ[u] = false;
+        for (auto& [v, w] : adj[u]) {
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                if (!inQ[v]) { q.push(v); inQ[v] = true; }
+            }
+        }
+    }
+    return dist;
+}`
+            },
+            {
+              title: "Currency arbitrage — log transform → negative cycle",
+              code: `bool hasArbitrage(vector<vector<double>>& rates) {
+    int n = rates.size();
+    vector<tuple<int,int,double>> edges;
+    for (int u = 0; u < n; u++)
+        for (int v = 0; v < n; v++)
+            if (u != v) edges.push_back({u, v, -log(rates[u][v])});
+    vector<double> dist(n, 0.0);   // any start vertex; arbitrage = global negative cycle
+    for (int i = 0; i < n - 1; i++)
+        for (auto& [u, v, w] : edges)
+            if (dist[u] + w < dist[v]) dist[v] = dist[u] + w;
+    for (auto& [u, v, w] : edges)
+        if (dist[u] + w < dist[v]) return true;
+    return false;
+}`
+            },
+            {
+              title: "Path reconstruction with Bellman-Ford",
+              code: `vector<int> bellmanPath(int n, int src, int t, vector<tuple<int,int,int>>& edges) {
+    vector<long long> dist(n, LLONG_MAX);
+    vector<int> parent(n, -1);
+    dist[src] = 0;
+    for (int i = 0; i < n - 1; i++)
+        for (auto& [u, v, w] : edges)
+            if (dist[u] != LLONG_MAX && dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                parent[v] = u;
+            }
+    if (dist[t] == LLONG_MAX) return {};
+    vector<int> path;
+    for (int c = t; c != -1; c = parent[c]) path.push_back(c);
+    reverse(path.begin(), path.end());
+    return path;
+}`
+            }
+          ],
+          complexity: { time: "Bellman-Ford O(V·E); SPFA O(V·E) worst case, often faster in practice", space: "O(V) for distances + O(E) for the edge list" },
+          keyPoints: [
+            "Single-source shortest paths with NEGATIVE edges allowed.",
+            "V-1 passes, each relaxing every edge — total O(V·E).",
+            "One extra pass detects negative cycles (any relaxation = cycle reachable).",
+            "Slower than Dijkstra but works where Dijkstra can't.",
+            "SPFA is a queue-based optimisation — same worst case, faster in practice.",
+            "For 'at most K stops', use exactly K+1 passes with a current/next array.",
+            "Currency arbitrage: take logs to convert multiplicative cycles into negative additive cycles.",
+            "Distance Vector routing (RIP) is distributed Bellman-Ford."
+          ],
+          pitfalls: [
+            "Forgetting the 'dist[u] != INF' guard — INT_MAX + w overflows.",
+            "Stopping after V-1 passes without the cycle-check pass — miss negative cycles.",
+            "Mutating dist[] in place across edges in 'K stops' — copy to a 'next' array each pass.",
+            "Negative SELF-LOOP is a degenerate negative cycle — detected automatically.",
+            "Using Bellman-Ford on dense graphs with V = 10⁴ — V·E = 10⁸+ ops, TLE.",
+            "SPFA worst case is still O(V·E) — adversarial inputs exist; don't assume it's always fast."
+          ],
           videoId: "LKfIjVZ6kg4",
           videoSearch: "bellman ford shortest path"
         },
         {
           name: "DSU (Union-Find) with path compression",
-          explanation: "Detailed notes coming soon. Track 'which group am I in?' for n elements. Two operations (find, union) in nearly O(1) amortized with path compression + union by rank.",
+          explanation: `DSU (Disjoint Set Union, also called Union-Find) tracks a partition of n elements into disjoint sets and supports two operations: FIND (which set does x belong to?) and UNION (merge the sets containing x and y). With two simple optimisations — path compression and union by rank — both operations run in O(α(n)) amortised — essentially O(1) for any n we'll ever see.
+
+DSU is the data structure for connectivity questions that arrive incrementally: edges streaming in, build Kruskal's MST, detect cycles in undirected graphs online, group accounts by transitive merges, percolation simulation, image segmentation.
+
+## The mental model
+
+Each element points to a "parent" element. Following parent pointers eventually leads to a ROOT — the representative of that element's set. Two elements are in the SAME set iff they have the SAME root.
+
+vector<int> parent(n);
+for (int i = 0; i < n; i++) parent[i] = i;       // initially each element is its own root
+
+## Find — follow parents to the root
+
+int find(int x) {
+    while (parent[x] != x) x = parent[x];
+    return x;
+}
+
+Naively O(depth-of-tree). With path compression, amortised O(α(n)).
+
+## Path compression
+
+While finding the root, RE-POINT every visited node directly to the root. Future queries on those nodes are O(1).
+
+int find(int x) {
+    if (parent[x] != x) parent[x] = find(parent[x]);
+    return parent[x];
+}
+
+(Iterative version with two passes is also common; either works.)
+
+## Union — merge two sets
+
+To merge sets containing x and y: find their roots, point one root to the other.
+
+void unite(int x, int y) {
+    int rx = find(x), ry = find(y);
+    if (rx == ry) return;
+    parent[rx] = ry;
+}
+
+To keep the tree shallow, attach the SMALLER tree to the larger one. That's union by RANK (an upper bound on height) or union by SIZE (number of nodes).
+
+vector<int> rnk(n, 0);
+void unite(int x, int y) {
+    int rx = find(x), ry = find(y);
+    if (rx == ry) return;
+    if (rnk[rx] < rnk[ry]) swap(rx, ry);
+    parent[ry] = rx;
+    if (rnk[rx] == rnk[ry]) rnk[rx]++;
+}
+
+## Why nearly O(1)
+
+With both optimisations, the AMORTISED time for m operations on n elements is O(m · α(n)) where α is the inverse Ackermann function — grows so slowly that α(n) < 5 for any n ≤ 2^65536. Practically O(1).
+
+## Common patterns
+
+**Count distinct sets**: maintain a counter; decrement on each successful union.
+
+**Set size**: keep a size[root] array; on union, add sizes; lookup size of x's set is size[find(x)].
+
+**Cycle detection on undirected graph**: for each edge (u, v), if find(u) == find(v), edge forms a cycle. Otherwise, unite.
+
+**Kruskal's MST**: sort edges by weight; for each, if endpoints in different sets, take the edge and unite.
+
+## Killer applications
+
+- **Kruskal's MST** — DSU + sorted edges.
+- **Connected components on streamed edges** — add edges one at a time.
+- **Number of Provinces / Friend Circles** — group friends transitively.
+- **Accounts Merge** — merge accounts that share any email.
+- **Redundant Connection** — first edge that closes a cycle.
+- **Smallest String With Swaps** — group swap-equivalent indices; sort within each group.
+- **Number of Islands II** (online) — grid cells turn into land one at a time; report component count after each.
+- **Percolation simulation** — connect cells when both are "open"; check if top is connected to bottom.
+
+## When NOT to use DSU
+
+- When you need DELETIONS (DSU doesn't support split).
+- When you need to enumerate the members of a set (DSU stores only the partition structure).
+- When edges arrive offline and the graph is static — plain DFS/BFS for components is simpler.
+
+## Variants
+
+- **Weighted DSU** (sometimes called "DSU with potential") — track relative offsets between elements; supports queries like "are x and y in the same set, and if so what's the difference?"
+- **DSU with rollback** — supports undo, used in offline algorithms; no path compression in this case.
+- **Persistent DSU** — for offline / functional-style problems.
+
+## Complexity recap
+
+| Op    | Naive   | Path compression only | + union by rank        |
+|-------|---------|------------------------|------------------------|
+| find  | O(n)    | O(log n) amortised     | O(α(n)) amortised      |
+| unite | O(n)    | O(log n) amortised     | O(α(n)) amortised      |
+
+Always use BOTH optimisations. The constant overhead is negligible and the asymptotic gain is dramatic.`,
+          codeBlocks: [
+            {
+              title: "DSU with path compression + union by rank",
+              code: `struct DSU {
+    vector<int> parent, rnk;
+    DSU(int n) : parent(n), rnk(n, 0) {
+        iota(parent.begin(), parent.end(), 0);
+    }
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);   // path compression
+        return parent[x];
+    }
+    bool unite(int x, int y) {
+        int rx = find(x), ry = find(y);
+        if (rx == ry) return false;
+        if (rnk[rx] < rnk[ry]) swap(rx, ry);
+        parent[ry] = rx;
+        if (rnk[rx] == rnk[ry]) rnk[rx]++;
+        return true;
+    }
+    bool sameSet(int x, int y) { return find(x) == find(y); }
+};`
+            },
+            {
+              title: "DSU with set sizes",
+              code: `struct DSU {
+    vector<int> parent, size;
+    int components;
+    DSU(int n) : parent(n), size(n, 1), components(n) {
+        iota(parent.begin(), parent.end(), 0);
+    }
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]);
+        return parent[x];
+    }
+    bool unite(int x, int y) {
+        int rx = find(x), ry = find(y);
+        if (rx == ry) return false;
+        if (size[rx] < size[ry]) swap(rx, ry);
+        parent[ry] = rx;
+        size[rx] += size[ry];
+        components--;
+        return true;
+    }
+    int setSize(int x) { return size[find(x)]; }
+};`
+            },
+            {
+              title: "Cycle detection on undirected graph (DSU)",
+              code: `bool hasCycleDSU(int n, vector<pair<int,int>>& edges) {
+    DSU dsu(n);
+    for (auto& [u, v] : edges)
+        if (!dsu.unite(u, v)) return true;
+    return false;
+}`
+            },
+            {
+              title: "Kruskal's MST",
+              code: `long long kruskal(int n, vector<tuple<int,int,int>>& edges) {
+    sort(edges.begin(), edges.end(),
+         [](const auto& a, const auto& b) { return get<2>(a) < get<2>(b); });
+    DSU dsu(n);
+    long long total = 0;
+    int taken = 0;
+    for (auto& [u, v, w] : edges) {
+        if (dsu.unite(u, v)) { total += w; if (++taken == n - 1) break; }
+    }
+    return total;
+}`
+            },
+            {
+              title: "Number of Connected Components — incremental",
+              code: `int countComponentsDSU(int n, vector<pair<int,int>>& edges) {
+    DSU dsu(n);
+    int c = n;
+    for (auto& [u, v] : edges) if (dsu.unite(u, v)) c--;
+    return c;
+}`
+            },
+            {
+              title: "Accounts Merge — group by shared email",
+              code: `// Each account is a list: [name, email1, email2, ...]. Merge accounts sharing any email.
+vector<vector<string>> accountsMerge(vector<vector<string>>& accounts) {
+    int n = accounts.size();
+    DSU dsu(n);
+    unordered_map<string, int> emailToIdx;
+    for (int i = 0; i < n; i++) {
+        for (int j = 1; j < (int)accounts[i].size(); j++) {
+            auto& e = accounts[i][j];
+            if (emailToIdx.count(e)) dsu.unite(i, emailToIdx[e]);
+            else emailToIdx[e] = i;
+        }
+    }
+    unordered_map<int, set<string>> groups;
+    for (auto& [e, i] : emailToIdx) groups[dsu.find(i)].insert(e);
+    vector<vector<string>> out;
+    for (auto& [root, emails] : groups) {
+        vector<string> row{accounts[root][0]};
+        row.insert(row.end(), emails.begin(), emails.end());
+        out.push_back(row);
+    }
+    return out;
+}`
+            }
+          ],
+          complexity: { time: "find/unite O(α(n)) amortised — practically O(1)", space: "O(n) for parent + rank/size arrays" },
+          keyPoints: [
+            "DSU tracks a partition of n elements into disjoint sets via 'parent' pointers.",
+            "find(x) follows parents to the root — the canonical representative of x's set.",
+            "unite(x, y) merges sets by pointing one root at the other.",
+            "Path compression: re-point every visited node directly to the root during find.",
+            "Union by rank/size: attach the smaller tree to the larger to keep height shallow.",
+            "Both optimisations together give O(α(n)) — practically constant time.",
+            "Cycle detection (undirected): if both endpoints have the same root, the edge forms a cycle.",
+            "Kruskal's MST is the canonical DSU application; Number of Provinces and Accounts Merge are too."
+          ],
+          pitfalls: [
+            "Implementing find without path compression — O(n) per query on adversarial inputs.",
+            "Implementing unite without size/rank — worst case is a chain again.",
+            "Forgetting that two elements with different VALUES can still be in the same SET — compare roots, not values.",
+            "Trying to UN-unite — DSU doesn't support split without 'rollback' variants.",
+            "Iterating parent[] directly to find members of a set — DSU only stores the partition; you need a separate per-root list.",
+            "Off-by-one when initialising parent[i] = i — easy to miss with vector default-init."
+          ],
           videoId: "YZ40AZQi0bk",
           videoSearch: "union find disjoint set union"
         },
         {
           name: "MST — Kruskal & Prim",
-          explanation: "Detailed notes coming soon. Find the minimum-weight tree connecting all vertices. Kruskal sorts edges and uses DSU; Prim grows the tree with a min-heap.",
+          explanation: `A spanning tree of a connected undirected graph is a subset of edges that connects ALL vertices with NO CYCLES — exactly V-1 edges. A MINIMUM SPANNING TREE (MST) is the spanning tree whose total edge weight is minimum.
+
+MSTs answer the question "what's the cheapest set of edges that keeps the graph connected?" — and that comes up everywhere: laying network cable, road construction, clustering, image segmentation, approximating the Traveling Salesman.
+
+Two classic algorithms: Kruskal's (sort edges + DSU) and Prim's (grow from a vertex + heap). Both are O(E log V) for typical inputs; pick whichever matches your data representation.
+
+## Kruskal's algorithm
+
+1. Sort all edges by weight.
+2. Walk edges from cheapest to most expensive. For each (u, v):
+   - If u and v are in DIFFERENT components, ADD this edge to the MST and UNITE the components.
+   - Otherwise (same component), skip — adding would form a cycle.
+3. Stop when you've added V-1 edges.
+
+long long kruskal(int n, vector<tuple<int,int,int>>& edges) {
+    sort(edges.begin(), edges.end(),
+         [](const auto& a, const auto& b) { return get<2>(a) < get<2>(b); });
+    DSU dsu(n);
+    long long total = 0;
+    int taken = 0;
+    for (auto& [u, v, w] : edges) {
+        if (dsu.unite(u, v)) {
+            total += w;
+            if (++taken == n - 1) break;
+        }
+    }
+    return total;
+}
+
+Time: O(E log E) for the sort + O(E α(n)) for the DSU operations = O(E log E) = O(E log V) (since E ≤ V²).
+
+## Prim's algorithm
+
+Like Dijkstra but with edge weights instead of path lengths. Grow the MST one vertex at a time, always adding the CHEAPEST EDGE that connects an in-tree vertex to an out-of-tree vertex.
+
+1. Pick any starting vertex; mark it "in tree".
+2. Repeatedly: pick the cheapest edge between an in-tree and out-of-tree vertex; add it; mark the new vertex in-tree.
+3. Stop when all V vertices are in.
+
+long long prim(int n, vector<vector<pair<int,int>>>& adj) {
+    vector<bool> inMST(n, false);
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;
+    pq.push({0, 0});                           // (weight, vertex) — start at 0
+    long long total = 0;
+    int taken = 0;
+    while (!pq.empty() && taken < n) {
+        auto [w, u] = pq.top(); pq.pop();
+        if (inMST[u]) continue;
+        inMST[u] = true;
+        total += w;
+        taken++;
+        for (auto& [v, ew] : adj[u])
+            if (!inMST[v]) pq.push({ew, v});
+    }
+    return total;
+}
+
+Time: O((V + E) log V) with a binary heap.
+
+## Why both algorithms work — the cut property
+
+The CUT PROPERTY: for any cut (split of vertices into two non-empty sets), the lightest edge crossing the cut is in SOME MST.
+
+Both algorithms exploit this differently:
+- Kruskal's: when you union two components, you're picking the lightest edge across the cut between them.
+- Prim's: when you pick the cheapest edge leaving the in-tree set, that's the lightest edge across the in-tree / out-of-tree cut.
+
+## Kruskal's vs Prim's — when to use which
+
+| Property                | Kruskal's          | Prim's              |
+|-------------------------|--------------------|---------------------|
+| Data structure          | Edge list + DSU    | Adjacency list + heap |
+| Time complexity         | O(E log E)         | O((V+E) log V)      |
+| Good for                | Sparse graphs      | Dense graphs        |
+| Dense-graph variant     | n/a                | O(V²) with array    |
+| Parallelisable          | Yes (Boruvka)      | Less so             |
+| Returns disconnected MSF if input disconnected | Yes | No (only finds one component's MST) |
+
+For the typical contest/interview problem, Kruskal's is simpler to write — just sort + DSU.
+
+## Minimum spanning forest
+
+If the graph isn't connected, there's no single spanning tree. Kruskal's produces a MINIMUM SPANNING FOREST — an MST for each component. Prim's, started from one vertex, only finds that component's MST.
+
+## Edge cases
+
+- **Multiple MSTs** — when several edges have the same weight. The TOTAL is unique, but the specific tree may vary.
+- **Duplicate edges** — both algorithms handle them fine; only the cheapest will be used.
+- **Self-loops** — never in an MST; both algorithms naturally skip them.
+
+## Common applications
+
+- **Min Cost to Connect All Points** — direct MST on point pairs (Manhattan / Euclidean distance).
+- **Connecting Cities With Minimum Cost** — direct.
+- **Optimize Water Distribution in a Village** — model "wells" as edges to a virtual node.
+- **Clustering** — remove the K-1 heaviest MST edges to split into K clusters (single-linkage clustering).
+- **Steiner tree approximations** — heuristics built on MST.
+- **Image segmentation** — MST on pixel-similarity graph.`,
+          codeBlocks: [
+            {
+              title: "Kruskal's MST (using the DSU from the previous lesson)",
+              code: `long long kruskal(int n, vector<tuple<int,int,int>>& edges) {
+    sort(edges.begin(), edges.end(),
+         [](const auto& a, const auto& b) { return get<2>(a) < get<2>(b); });
+    DSU dsu(n);
+    long long total = 0;
+    int taken = 0;
+    for (auto& [u, v, w] : edges) {
+        if (dsu.unite(u, v)) {
+            total += w;
+            if (++taken == n - 1) break;
+        }
+    }
+    return total;
+}`
+            },
+            {
+              title: "Prim's MST with a min-heap",
+              code: `long long prim(int n, vector<vector<pair<int,int>>>& adj) {
+    vector<bool> inMST(n, false);
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;
+    pq.push({0, 0});                          // start vertex 0, edge weight 0
+    long long total = 0;
+    int taken = 0;
+    while (!pq.empty() && taken < n) {
+        auto [w, u] = pq.top(); pq.pop();
+        if (inMST[u]) continue;
+        inMST[u] = true;
+        total += w;
+        taken++;
+        for (auto& [v, ew] : adj[u])
+            if (!inMST[v]) pq.push({ew, v});
+    }
+    return total;
+}`
+            },
+            {
+              title: "Return the edges of the MST (not just the weight)",
+              code: `vector<tuple<int,int,int>> kruskalEdges(int n, vector<tuple<int,int,int>>& edges) {
+    sort(edges.begin(), edges.end(),
+         [](const auto& a, const auto& b) { return get<2>(a) < get<2>(b); });
+    DSU dsu(n);
+    vector<tuple<int,int,int>> mst;
+    for (auto& [u, v, w] : edges) {
+        if (dsu.unite(u, v)) {
+            mst.push_back({u, v, w});
+            if ((int)mst.size() == n - 1) break;
+        }
+    }
+    return mst;
+}`
+            },
+            {
+              title: "Min Cost to Connect All Points (Manhattan distance)",
+              code: `int minCostConnect(vector<vector<int>>& points) {
+    int n = points.size();
+    vector<tuple<int,int,int>> edges;
+    for (int i = 0; i < n; i++)
+        for (int j = i + 1; j < n; j++) {
+            int d = abs(points[i][0] - points[j][0])
+                  + abs(points[i][1] - points[j][1]);
+            edges.push_back({i, j, d});
+        }
+    return (int)kruskal(n, edges);
+}`
+            },
+            {
+              title: "Prim's for a dense graph — O(V²) array version",
+              code: `long long primDense(int n, vector<vector<int>>& w) {
+    vector<int> minEdge(n, INT_MAX);
+    vector<bool> inMST(n, false);
+    minEdge[0] = 0;
+    long long total = 0;
+    for (int i = 0; i < n; i++) {
+        int u = -1;
+        for (int j = 0; j < n; j++)
+            if (!inMST[j] && (u == -1 || minEdge[j] < minEdge[u])) u = j;
+        if (minEdge[u] == INT_MAX) return -1;     // disconnected
+        inMST[u] = true;
+        total += minEdge[u];
+        for (int v = 0; v < n; v++)
+            if (!inMST[v] && w[u][v] < minEdge[v]) minEdge[v] = w[u][v];
+    }
+    return total;
+}`
+            },
+            {
+              title: "Cluster a point set into K clusters via MST",
+              code: `// Build MST, sort its edges by weight, remove the K-1 heaviest.
+// Connected components in what remains = K clusters.
+vector<int> mstClustering(int n, vector<tuple<int,int,int>>& edges, int K) {
+    auto mst = kruskalEdges(n, edges);
+    sort(mst.begin(), mst.end(),
+         [](const auto& a, const auto& b) { return get<2>(a) > get<2>(b); });
+    mst.erase(mst.begin(), mst.begin() + (K - 1));   // drop K-1 heaviest
+    DSU dsu(n);
+    for (auto& [u, v, w] : mst) dsu.unite(u, v);
+    vector<int> cluster(n);
+    for (int i = 0; i < n; i++) cluster[i] = dsu.find(i);
+    return cluster;
+}`
+            }
+          ],
+          complexity: { time: "Kruskal O(E log E); Prim with heap O((V+E) log V); Prim dense O(V²)", space: "O(V + E)" },
+          keyPoints: [
+            "MST = lowest-weight set of V-1 edges connecting all V vertices, no cycles.",
+            "Kruskal's: sort edges ascending; greedily take each that doesn't form a cycle (DSU).",
+            "Prim's: grow from a starting vertex, always add the cheapest edge to a new vertex (heap).",
+            "Both rely on the CUT PROPERTY — lightest edge across any cut is in some MST.",
+            "Kruskal's wins for sparse graphs and online edge streams; Prim's wins for dense graphs.",
+            "Stop early once you've taken V-1 edges (or all V vertices in for Prim's).",
+            "Total weight is unique even when multiple MSTs exist; the specific edges may vary on ties.",
+            "Clustering, network design, image segmentation, and Steiner-tree approximations all build on MST."
+          ],
+          pitfalls: [
+            "Forgetting to skip same-component edges in Kruskal's — wrong answer (you'd add edges that form cycles).",
+            "Using int for weight sum when E · max_weight can overflow — switch to long long.",
+            "Prim's with priority_queue and stale entries — need the if (inMST[u]) continue; guard.",
+            "Disconnected graph: Kruskal's returns the MSF (one tree per component); Prim's returns only the starting component's MST — handle disconnected explicitly.",
+            "Prim's O(V²) on a sparse graph wastes time — use the heap version for E << V².",
+            "Multi-graph (multiple edges between same pair) — both algorithms handle it; only cheapest survives."
+          ],
           videoId: "J7nUacHWtsM",
           videoSearch: "minimum spanning tree kruskal prim"
         }
