@@ -3379,43 +3379,1389 @@ int solve(int i, int j) {
       concepts: [
         {
           name: "Singly & Doubly Linked Lists",
-          explanation: "Detailed notes coming soon. A chain of nodes connected by next (and prev) pointers. Insertion at head is O(1); search is O(n).",
+          explanation: `A linked list is a chain of nodes. Each node holds a value and a pointer to the next node. Unlike an array, the nodes can sit anywhere in memory — they're stitched together by pointers, not by contiguous storage. That trade gives you O(1) insertion and deletion if you already have a pointer to the spot, paid for with O(n) access and worse cache behaviour.
+
+You'll write linked lists by hand far more often than you'll actually use them — but they're the gateway to pointer-thinking, which you'll need for trees, graphs, and just about every dynamic data structure.
+
+## Singly linked list
+
+Each node has value + next pointer. The list is identified by a head pointer; the last node's next is nullptr.
+
+struct Node {
+    int val;
+    Node* next;
+    Node(int v) : val(v), next(nullptr) {}
+};
+
+Traversal is "walk next until nullptr":
+
+for (Node* p = head; p != nullptr; p = p->next) cout << p->val << " ";
+
+Insert at HEAD is O(1) — new node points to old head, head moves to new node.
+Insert at TAIL is O(n) unless you keep a tail pointer.
+Delete a node requires the PREVIOUS node so you can re-stitch.
+
+## Doubly linked list
+
+Each node has value + next + prev. The cost is the extra pointer per node; the benefit is O(1) deletion if you have a pointer to the node itself (you can find prev via the back-link).
+
+struct DNode {
+    int val;
+    DNode* prev;
+    DNode* next;
+};
+
+Every modern STL container that allows fast end-modification (std::list, std::deque internally) uses doubly linked structure under the hood.
+
+## Sentinel / dummy nodes
+
+A surprisingly powerful idiom: keep an always-present dummy head node before the real first element. Now you never have to special-case "what if the list is empty" or "what if we're deleting the first node" — the dummy is always there to be the previous pointer. Used heavily in interview solutions.
+
+Node dummy(0);
+dummy.next = head;
+// ... operate using dummy as the "before-head" anchor ...
+return dummy.next;       // the (possibly changed) real head
+
+## Time-complexity cheat sheet
+
+| Operation                          | Array         | Singly LL  | Doubly LL  |
+|------------------------------------|---------------|------------|------------|
+| Access at index i                  | O(1)          | O(n)       | O(n)       |
+| Insert at head                     | O(n)          | O(1)       | O(1)       |
+| Insert at tail (with tail ptr)     | O(1) amort.   | O(1)       | O(1)       |
+| Insert/delete given pointer to node| O(n)          | O(n) prev  | O(1)       |
+| Search by value                    | O(n)          | O(n)       | O(n)       |
+| Memory per element                 | 1×            | 2×         | 3×         |
+
+## Two-pointer tricks
+
+Linked lists shine for two-pointer work because you can't index into them:
+
+- **Find middle**: slow moves 1 step, fast moves 2; when fast reaches end, slow is at the middle.
+- **Detect cycle**: slow + fast — they meet iff there's a cycle (Floyd's algorithm, next concept).
+- **N-th from end**: advance fast n steps, then move both until fast hits end.
+
+## When to actually use linked list
+
+In real C++ code, almost never. std::vector is faster for nearly every workload because it's cache-friendly. The narrow wins for std::list:
+- Splicing/concatenating in O(1) when you have iterators.
+- Iterator stability under insertion/deletion (vector invalidates everything).
+- Genuinely huge elements where you can't afford the copy on resize.
+
+For interviews, linked-list problems are everywhere — they're how problem-setters force you to think in pointers.`,
+          codeBlocks: [
+            {
+              title: "Singly linked list — node + traversal + insert-at-head",
+              code: `struct Node {
+    int val;
+    Node* next;
+    Node(int v) : val(v), next(nullptr) {}
+};
+
+void printList(Node* head) {
+    for (Node* p = head; p != nullptr; p = p->next) cout << p->val << " ";
+    cout << "\\n";
+}
+
+Node* insertHead(Node* head, int v) {
+    Node* n = new Node(v);
+    n->next = head;
+    return n;                          // new head
+}`
+            },
+            {
+              title: "Insert at tail (O(n) without a tail pointer)",
+              code: `Node* insertTail(Node* head, int v) {
+    Node* n = new Node(v);
+    if (!head) return n;
+    Node* p = head;
+    while (p->next) p = p->next;
+    p->next = n;
+    return head;
+}`
+            },
+            {
+              title: "Delete by value (singly LL — need the previous pointer)",
+              code: `Node* deleteVal(Node* head, int target) {
+    Node dummy(0);                     // sentinel — no special case for head
+    dummy.next = head;
+    Node* prev = &dummy;
+    while (prev->next) {
+        if (prev->next->val == target) {
+            Node* doomed = prev->next;
+            prev->next = doomed->next;
+            delete doomed;
+            break;
+        }
+        prev = prev->next;
+    }
+    return dummy.next;
+}`
+            },
+            {
+              title: "Find the middle node (slow/fast)",
+              code: `Node* findMiddle(Node* head) {
+    Node* slow = head;
+    Node* fast = head;
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+    return slow;                       // for even-length, returns the second-of-two middles
+}`
+            },
+            {
+              title: "Doubly linked list — insert and delete in O(1)",
+              code: `struct DNode {
+    int val;
+    DNode* prev;
+    DNode* next;
+    DNode(int v) : val(v), prev(nullptr), next(nullptr) {}
+};
+
+// Insert n after a given node x — O(1).
+void insertAfter(DNode* x, DNode* n) {
+    n->prev = x;
+    n->next = x->next;
+    if (x->next) x->next->prev = n;
+    x->next = n;
+}
+
+// Delete node x — O(1).
+void deleteNode(DNode* x) {
+    if (x->prev) x->prev->next = x->next;
+    if (x->next) x->next->prev = x->prev;
+    delete x;
+}`
+            },
+            {
+              title: "Convert array → linked list (handy for tests)",
+              code: `Node* fromArray(vector<int>& a) {
+    Node dummy(0);
+    Node* tail = &dummy;
+    for (int x : a) { tail->next = new Node(x); tail = tail->next; }
+    return dummy.next;
+}`
+            }
+          ],
+          complexity: { time: "Access O(n); insert/delete given pointer O(1) (doubly) or O(prev-walk) (singly); search O(n)", space: "O(n) — extra pointer per node (2× or 3× array memory)" },
+          keyPoints: [
+            "A linked list is a chain of nodes; access is O(n) but pointer-known insertion/deletion is fast.",
+            "Singly LL: each node has value + next. Doubly LL: also has prev — enables O(1) deletion.",
+            "Insert at HEAD is always O(1). Insert at TAIL is O(1) only with a tail pointer.",
+            "Deleting a node in a singly LL requires the previous node — use a dummy sentinel to avoid edge cases.",
+            "Two-pointer (slow/fast) is the canonical linked-list pattern: find middle, detect cycle, find N-th-from-end.",
+            "Doubly linked structure underpins std::list and the ends of std::deque.",
+            "Cache behaviour is poor (nodes scattered) — std::vector beats std::list for almost every real workload.",
+            "Interview problems lean heavily on linked lists because they force pointer-thinking."
+          ],
+          pitfalls: [
+            "Forgetting to update the head pointer when inserting before it — use a dummy node to dodge this.",
+            "Memory leaks: deleting a node but forgetting delete on the node itself.",
+            "Null-dereferencing — always check p && p->next before p->next->something.",
+            "Dangling pointers — after delete p, p still 'exists' but points to freed memory. Set to nullptr.",
+            "Reversing a list while traversing it — you'll lose access to next unless you save it first.",
+            "Comparing nodes by value when you should compare by address (or vice-versa) — pick one model and stick with it."
+          ],
           videoId: "Crqgl10aIGQ",
           videoSearch: "linked list singly doubly"
         },
         {
           name: "Floyd's Cycle Detection & LL Reversal",
-          explanation: "Detailed notes coming soon. Two-pointer (slow/fast) tricks for finding cycles, middles, and reversing a list in O(n) time and O(1) space.",
+          explanation: `Two of the most asked linked-list interview questions: "is there a cycle?" and "reverse this list". Both have elegant O(n)-time / O(1)-space solutions that you should be able to write from memory. They're built on the slow/fast two-pointer idiom and an in-place pointer rewiring pattern.
+
+## Floyd's tortoise and hare — cycle detection
+
+A list has a cycle if some node's next points back to an earlier node, so traversal would loop forever. Floyd's algorithm runs two pointers at different speeds:
+
+slow = head, fast = head;
+while fast and fast->next:
+    slow = slow->next;
+    fast = fast->next->next;
+    if slow == fast: return CYCLE;
+return NO_CYCLE;
+
+Why it works: if there's a cycle of length C, once both pointers are inside the cycle, the distance between them changes by 1 each step (fast gains 1 on slow). Within C steps they MUST meet. If there's no cycle, fast hits nullptr.
+
+O(n) time, O(1) space — the gold standard. A hash-set version exists (store visited nodes, check membership) — same asymptotic time but O(n) space and slower constants.
+
+## Find where the cycle BEGINS
+
+Sometimes you want not just "is there a cycle" but "what node is the start of the cycle". Floyd's gives you that too. After slow and fast meet inside the cycle, reset slow to head and step both one at a time — they meet at the cycle's entry node.
+
+The proof is a short bit of modular arithmetic about the distances; the key fact is "step both one at a time after the meeting" — that's all you need to remember.
+
+## Iterative reverse — in place, O(n) / O(1)
+
+The crown jewel of linked-list interviews. You walk the list once, flipping each node's next pointer to point to the PREVIOUS node.
+
+Node* reverse(Node* head) {
+    Node* prev = nullptr;
+    Node* curr = head;
+    while (curr) {
+        Node* next = curr->next;       // save before we overwrite
+        curr->next = prev;              // flip
+        prev = curr;
+        curr = next;
+    }
+    return prev;                        // prev is the new head
+}
+
+Three pointers (prev, curr, next), one pass, no extra memory. Memorise this.
+
+## Recursive reverse
+
+For pointer-thinking practice. Recurse to the end, then on the way back rewire.
+
+Node* reverseRec(Node* head) {
+    if (!head || !head->next) return head;
+    Node* rest = reverseRec(head->next);
+    head->next->next = head;
+    head->next = nullptr;
+    return rest;
+}
+
+Same O(n) time, but O(n) stack — worse than iterative for big lists.
+
+## Reverse a sub-section (Reverse Between)
+
+When the problem says "reverse nodes from position m to n", use a dummy sentinel + walk to position m-1 + reverse n-m+1 nodes + reconnect. The dummy avoids special-casing m=1.
+
+## Reverse in groups of K
+
+A classic harder version. Walk K nodes, reverse them, stitch the reversed segment back into the chain, recurse on the rest. If fewer than K remain, leave them alone (or reverse, depending on the problem variant).
+
+## Combining the patterns
+
+Many "harder" linked-list problems are these two patterns glued together:
+- Palindrome check: find middle (slow/fast) + reverse second half + compare halves.
+- Reorder list: find middle + reverse second half + interleave halves.
+- Detect intersection: count lengths via two passes, align pointers, walk together.
+
+Get cycle detection and in-place reverse fluent — most LL problems collapse into one of these moves.`,
+          codeBlocks: [
+            {
+              title: "Floyd's cycle detection",
+              code: `bool hasCycle(Node* head) {
+    Node* slow = head;
+    Node* fast = head;
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+        if (slow == fast) return true;
+    }
+    return false;
+}`
+            },
+            {
+              title: "Find the start of the cycle (Linked List Cycle II)",
+              code: `Node* cycleStart(Node* head) {
+    Node* slow = head;
+    Node* fast = head;
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+        if (slow == fast) {
+            slow = head;
+            while (slow != fast) { slow = slow->next; fast = fast->next; }
+            return slow;
+        }
+    }
+    return nullptr;
+}`
+            },
+            {
+              title: "Iterative reverse — three-pointer template",
+              code: `Node* reverse(Node* head) {
+    Node* prev = nullptr;
+    Node* curr = head;
+    while (curr) {
+        Node* next = curr->next;       // save next
+        curr->next = prev;              // flip
+        prev = curr;                    // advance prev
+        curr = next;                    // advance curr
+    }
+    return prev;
+}`
+            },
+            {
+              title: "Recursive reverse",
+              code: `Node* reverseRec(Node* head) {
+    if (!head || !head->next) return head;
+    Node* newHead = reverseRec(head->next);
+    head->next->next = head;
+    head->next = nullptr;
+    return newHead;
+}`
+            },
+            {
+              title: "Reverse between positions m and n",
+              code: `Node* reverseBetween(Node* head, int m, int n) {
+    Node dummy(0);
+    dummy.next = head;
+    Node* prev = &dummy;
+    for (int i = 1; i < m; i++) prev = prev->next;   // node before position m
+    Node* curr = prev->next;
+    for (int i = 0; i < n - m; i++) {
+        Node* moved = curr->next;
+        curr->next  = moved->next;
+        moved->next = prev->next;
+        prev->next  = moved;
+    }
+    return dummy.next;
+}`
+            },
+            {
+              title: "Palindrome check — find middle, reverse, compare",
+              code: `bool isPalindrome(Node* head) {
+    // 1) find middle
+    Node *slow = head, *fast = head;
+    while (fast && fast->next) { slow = slow->next; fast = fast->next->next; }
+    // 2) reverse from slow
+    Node *prev = nullptr, *curr = slow;
+    while (curr) { Node* n = curr->next; curr->next = prev; prev = curr; curr = n; }
+    // 3) compare
+    Node *p = head, *q = prev;
+    while (q) { if (p->val != q->val) return false; p = p->next; q = q->next; }
+    return true;
+}`
+            }
+          ],
+          complexity: { time: "Cycle detection O(n); reverse O(n)", space: "O(1) iterative; O(n) recursive (stack)" },
+          keyPoints: [
+            "Floyd's tortoise and hare detects cycles in O(n) time, O(1) space — gold standard.",
+            "After slow == fast inside a cycle, reset slow to head; they meet again at the cycle's entry.",
+            "Iterative reverse uses three pointers: prev, curr, next. Save next BEFORE flipping.",
+            "Recursive reverse is elegant but O(n) stack — iterative is safer for big lists.",
+            "Always use a dummy sentinel for problems that may modify the head — avoids null-head corner cases.",
+            "Palindrome / reorder / detect-intersection problems all combine cycle/reverse/middle tricks.",
+            "Slow/fast pointer also finds the MIDDLE: when fast hits end, slow is at the middle node.",
+            "Reverse in K-groups = walk K, reverse, stitch, recurse — combine the basic patterns."
+          ],
+          pitfalls: [
+            "Forgetting the fast && fast->next guard — fast->next->next null-dereferences if fast->next is null.",
+            "In iterative reverse, forgetting to save next before flipping curr->next loses the rest of the list.",
+            "Recursive reverse on a 10⁶-node list overflows the stack.",
+            "Returning curr (not prev) from iterative reverse — curr is nullptr at the end; prev is the new head.",
+            "Comparing pointers (==) when you mean values (->val == ->val), or vice versa.",
+            "After reversing a sub-section, forgetting to relink the head and tail of the segment — the chain breaks."
+          ],
           videoId: "Fj1ywT9ETQk",
           videoSearch: "floyd cycle detection linked list reversal"
         },
         {
           name: "Stack (LIFO, implementations)",
-          explanation: "Detailed notes coming soon. Last-In-First-Out. Built via array or linked list. Used for balanced brackets, expression evaluation, undo systems, and DFS.",
+          explanation: `A stack is a Last-In-First-Out (LIFO) container. You push values on top and pop them off the top — the most recently pushed value is always the next one out. Think of a stack of plates: you take from the top, you put on the top, you never reach into the middle.
+
+Despite being one of the simplest data structures, the stack underpins a huge fraction of algorithms — every recursive function uses one (the call stack), every DFS uses one (explicitly or implicitly), every expression evaluator uses one, and the "monotonic stack" trick solves a whole category of array problems in O(n).
+
+## The operations
+
+push(x)   — add x to the top. O(1).
+pop()     — remove the top element. O(1).
+top()     — peek at the top without removing. O(1).
+empty()   — true if no elements. O(1).
+size()    — number of elements. O(1).
+
+Notice the asymmetry with queues — a stack has access to ONE end only. That's the whole definition.
+
+## std::stack — the C++ STL stack
+
+#include <stack>
+stack<int> s;
+s.push(3); s.push(7); s.push(1);
+cout << s.top();          // 1
+s.pop();
+cout << s.top();          // 7
+cout << s.size();         // 2
+
+std::stack is a CONTAINER ADAPTER — it's a wrapper around another container (default: deque). All it does is restrict the interface to push/pop/top.
+
+WARNING: in C++, s.pop() does NOT return the popped value. Use top() first, then pop(). This catches everyone the first time.
+
+int x = s.top(); s.pop();    // C++ idiom for "pop and use"
+
+## Implementation #1 — array-backed
+
+The simplest stack: a fixed-size array + an integer top index. push writes to a[top++]; pop reads from a[--top]; top peeks at a[top-1]. Constant time for everything, no allocation per push.
+
+class ArrayStack {
+    int a[100], top = 0;
+public:
+    void push(int x) { a[top++] = x; }
+    int  pop()       { return a[--top]; }
+    int  peek()      { return a[top - 1]; }
+    bool empty()     { return top == 0; }
+};
+
+Fixed capacity, but trivially extended to a vector for dynamic size.
+
+## Implementation #2 — linked-list-backed
+
+Each node has value + next. push creates a new node whose next is the old head; pop returns the head and moves head to head->next. Same O(1), more allocation overhead, worse cache behaviour. Useful when you can't predict the maximum size and don't want amortised resizes.
+
+## The call stack — the most important stack you'll ever use
+
+Every function call pushes a stack frame: local variables, parameters, return address. Every return pops one. Recursion just keeps pushing frames until the base case returns.
+
+Recursion depth = stack frames in use = O(depth) memory. That's why deep recursion overflows: the call stack is fixed at 1–8 MB.
+
+You can manually replace recursion with an explicit stack — same algorithm, more control over memory, no overflow worry. We'll see this in iterative DFS.
+
+## Classic stack problems
+
+- **Balanced brackets** — push openers, pop on closer and check match.
+- **Infix → postfix conversion (Shunting Yard)** — operator precedence on a stack.
+- **Postfix evaluation** — push operands, pop two on operator, push result.
+- **Next Greater Element / Daily Temperatures** — monotonic stack pattern (next concept).
+- **Largest Rectangle in Histogram** — monotonic stack.
+- **Min Stack** — a stack that also returns the minimum element in O(1).
+- **Iterative DFS** — replace recursion with an explicit stack.
+
+## When to reach for a stack
+
+The trigger: "I need to remember the most recent thing(s) and process them in reverse order." Bracket matching, undo histories, backtracking-style exploration, and reverse traversal of a structure are all instances.`,
+          codeBlocks: [
+            {
+              title: "std::stack — basic operations",
+              code: `#include <iostream>
+#include <stack>
+using namespace std;
+
+int main() {
+    stack<int> s;
+    s.push(3);
+    s.push(7);
+    s.push(1);
+    cout << s.top()  << "\\n";   // 1
+    s.pop();
+    cout << s.top()  << "\\n";   // 7
+    cout << s.size() << "\\n";   // 2
+}`
+            },
+            {
+              title: "Array-backed stack from scratch",
+              code: `template<int N>
+class ArrayStack {
+    int a[N];
+    int topIdx = 0;
+public:
+    void push(int x) { if (topIdx < N) a[topIdx++] = x; }
+    int  pop()       { return a[--topIdx]; }
+    int  top() const { return a[topIdx - 1]; }
+    bool empty() const { return topIdx == 0; }
+    int  size()  const { return topIdx; }
+};`
+            },
+            {
+              title: "Balanced brackets — the canonical stack problem",
+              code: `bool isBalanced(const string& s) {
+    stack<char> st;
+    for (char c : s) {
+        if (c == '(' || c == '[' || c == '{') st.push(c);
+        else {
+            if (st.empty()) return false;
+            char top = st.top(); st.pop();
+            if ((c == ')' && top != '(') ||
+                (c == ']' && top != '[') ||
+                (c == '}' && top != '{')) return false;
+        }
+    }
+    return st.empty();
+}`
+            },
+            {
+              title: "Min Stack — top + min both in O(1)",
+              code: `class MinStack {
+    stack<int> vals, mins;
+public:
+    void push(int x) {
+        vals.push(x);
+        mins.push(mins.empty() ? x : min(x, mins.top()));
+    }
+    void pop()  { vals.pop(); mins.pop(); }
+    int top()   { return vals.top(); }
+    int getMin(){ return mins.top(); }
+};`
+            },
+            {
+              title: "Iterative DFS on a graph (explicit stack)",
+              code: `void dfsIter(int start, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<bool> visited(n, false);
+    stack<int> st;
+    st.push(start);
+    while (!st.empty()) {
+        int u = st.top(); st.pop();
+        if (visited[u]) continue;
+        visited[u] = true;
+        cout << u << " ";
+        for (int v : adj[u]) if (!visited[v]) st.push(v);
+    }
+}`
+            },
+            {
+              title: "Reverse a string with a stack (toy example)",
+              code: `string reverse(const string& s) {
+    stack<char> st;
+    for (char c : s) st.push(c);
+    string out;
+    while (!st.empty()) { out.push_back(st.top()); st.pop(); }
+    return out;
+}`
+            }
+          ],
+          complexity: { time: "push/pop/top/empty/size all O(1)", space: "O(n)" },
+          keyPoints: [
+            "Stack = LIFO. Last in, first out. Access is to one end only (the 'top').",
+            "All operations (push, pop, top, empty, size) are O(1).",
+            "std::stack is a container adapter — pass any container (deque, vector, list) as the underlying.",
+            "s.pop() in C++ does NOT return the value — call s.top() first to read it.",
+            "Implementable with an array + top index (fastest) or a linked list (dynamic size).",
+            "The function call stack is the most important stack: recursion uses it implicitly.",
+            "Convert recursion → iteration by managing the stack yourself — avoids stack-overflow risk.",
+            "Pattern triggers: bracket matching, expression evaluation, undo histories, backtracking, iterative DFS, monotonic-stack problems."
+          ],
+          pitfalls: [
+            "Treating s.pop() as a value-returning op — it returns void in C++. Call top() then pop().",
+            "Calling top() or pop() on an empty stack — undefined behaviour. Always check empty().",
+            "Array-backed stack with fixed capacity: pushing past the limit silently corrupts memory.",
+            "Forgetting to clear or rebuild the stack between test cases — leftover state from previous runs.",
+            "Confusing push/pop on a vector (back/back) with on a stack (top/top) — both work, just different idioms.",
+            "Using a stack where a queue is needed (or vice versa) — confirm the order requirements before coding."
+          ],
           videoId: "JvuaAgDar1c",
           videoSearch: "stack data structure c++"
         },
         {
           name: "Queue & Deque",
-          explanation: "Detailed notes coming soon. FIFO with enqueue/dequeue, plus the double-ended deque for O(1) ops on either end. Used for BFS and scheduling.",
+          explanation: `A queue is a First-In-First-Out (FIFO) container. You enqueue at the BACK and dequeue from the FRONT — the opposite of a stack. A deque (double-ended queue) generalises this with O(1) operations on BOTH ends. Together they power BFS, scheduling, sliding window, monotonic deque, and dozens of stream-processing patterns.
+
+## The queue operations
+
+push(x) / enqueue(x)   — add x to the back. O(1).
+pop()    / dequeue()   — remove the front element. O(1).
+front()                — peek at the front without removing. O(1).
+back()                 — peek at the back without removing. O(1).
+empty() / size()       — O(1).
+
+In std::queue (an STL container adapter wrapping a deque), the names are push/pop/front/back/empty/size. Like stack, queue's pop() returns void — read front() first.
+
+## std::queue — basic FIFO
+
+#include <queue>
+queue<int> q;
+q.push(10); q.push(20); q.push(30);
+cout << q.front();        // 10
+q.pop();
+cout << q.front();        // 20
+cout << q.back();         // 30
+
+Default underlying container is deque. For FIFO use, that's optimal.
+
+## std::deque — double-ended queue
+
+#include <deque>
+deque<int> dq;
+dq.push_back(10); dq.push_front(5); dq.push_back(20);
+// dq is now: [5, 10, 20]
+dq.pop_front();           // [10, 20]
+dq.pop_back();            // [10]
+cout << dq.front() << " " << dq.back();  // 10 10
+
+Deque also supports random access (dq[i]) and iteration, so it's more flexible than std::queue. In modern C++, when in doubt, reach for deque — it's a queue, a stack, and an array all in one.
+
+## Why deque is fast
+
+Internally, deque is a sequence of fixed-size blocks, each holding several elements. Push/pop at either end only touches the boundary block. Random access does an extra indirection (block lookup + offset) but is still O(1).
+
+This blockwise design is why deque is much faster than list for the same operations — better cache behaviour, no per-element allocation.
+
+## Implementing a queue from arrays — the circular buffer
+
+A naive array queue that uses one end for push and the other for pop wastes memory: after enough pops, the "live" region drifts and you have to copy. Solution: circular buffer. Use two indices (head, tail) that wrap around modulo capacity.
+
+class CircularQueue {
+    vector<int> buf;
+    int head = 0, tail = 0, count = 0;
+public:
+    CircularQueue(int n) : buf(n) {}
+    void push(int x) { buf[tail] = x; tail = (tail + 1) % buf.size(); count++; }
+    int  pop()       { int x = buf[head]; head = (head + 1) % buf.size(); count--; return x; }
+};
+
+## Priority queue (preview)
+
+std::priority_queue is a heap, not a FIFO queue. The "highest priority" element comes out next, not the oldest. Default is a max-heap (largest first). We'll cover it next week with trees and heaps.
+
+## Classic queue/deque problems
+
+- **BFS on a graph** — the canonical use of queue. Push neighbours, pop in order.
+- **Level-order traversal of a tree** — queue holds the current level's nodes.
+- **Sliding window maximum** — monotonic deque maintains candidates for the max.
+- **First Non-Repeating Character in a Stream** — queue of characters seen exactly once.
+- **Rotting Oranges / 01 Matrix / Walls and Gates** — multi-source BFS, all using queues.
+- **Number of Islands (BFS variant)** — queue holds cells to process.
+
+## When to use a deque vs a queue vs a stack
+
+Queue when you need FIFO and only FIFO. Stack when you need LIFO. Deque when you need either end (or both), or when you want random access AND fast push/pop on the ends. Most BFS code uses queue; most monotonic-window code uses deque.`,
+          codeBlocks: [
+            {
+              title: "std::queue — FIFO basics",
+              code: `#include <iostream>
+#include <queue>
+using namespace std;
+
+int main() {
+    queue<int> q;
+    q.push(10); q.push(20); q.push(30);
+    cout << q.front() << "\\n";   // 10
+    cout << q.back()  << "\\n";   // 30
+    q.pop();
+    cout << q.front() << "\\n";   // 20
+    cout << q.size() << "\\n";    // 2
+}`
+            },
+            {
+              title: "std::deque — push/pop on both ends",
+              code: `#include <iostream>
+#include <deque>
+using namespace std;
+
+int main() {
+    deque<int> dq;
+    dq.push_back(10);
+    dq.push_front(5);
+    dq.push_back(20);
+    // dq is now [5, 10, 20]
+    for (int x : dq) cout << x << " ";
+    cout << "\\n";
+    dq.pop_front();              // [10, 20]
+    dq.pop_back();               // [10]
+    cout << dq[0] << "\\n";       // 10
+}`
+            },
+            {
+              title: "BFS on a graph (queue is the engine)",
+              code: `void bfs(int start, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<bool> visited(n, false);
+    queue<int> q;
+    q.push(start);
+    visited[start] = true;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        cout << u << " ";
+        for (int v : adj[u]) {
+            if (!visited[v]) {
+                visited[v] = true;
+                q.push(v);
+            }
+        }
+    }
+}`
+            },
+            {
+              title: "Circular buffer queue from scratch",
+              code: `class CircularQueue {
+    vector<int> buf;
+    int head = 0, tail = 0, count = 0;
+public:
+    CircularQueue(int n) : buf(n) {}
+    bool push(int x) {
+        if (count == (int)buf.size()) return false;
+        buf[tail] = x;
+        tail = (tail + 1) % buf.size();
+        count++;
+        return true;
+    }
+    bool pop() {
+        if (count == 0) return false;
+        head = (head + 1) % buf.size();
+        count--;
+        return true;
+    }
+    int front() { return buf[head]; }
+    bool empty() { return count == 0; }
+};`
+            },
+            {
+              title: "Sliding window maximum with a monotonic deque",
+              code: `// For each window of size k, output the maximum. Each element enters & leaves once → O(n).
+vector<int> maxWindow(vector<int>& a, int k) {
+    deque<int> dq;                    // stores indices; values decreasing front→back
+    vector<int> out;
+    for (int i = 0; i < (int)a.size(); i++) {
+        while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();
+        dq.push_back(i);
+        if (dq.front() <= i - k) dq.pop_front();
+        if (i >= k - 1) out.push_back(a[dq.front()]);
+    }
+    return out;
+}`
+            },
+            {
+              title: "Implement stack with two queues (interview classic)",
+              code: `class StackFromQueues {
+    queue<int> q1, q2;
+public:
+    void push(int x) {
+        q2.push(x);
+        while (!q1.empty()) { q2.push(q1.front()); q1.pop(); }
+        swap(q1, q2);
+    }
+    int top()  { return q1.front(); }
+    void pop() { q1.pop(); }
+    bool empty() { return q1.empty(); }
+};`
+            }
+          ],
+          complexity: { time: "queue and deque push/pop/front/back all O(1); deque random access O(1)", space: "O(n)" },
+          keyPoints: [
+            "Queue = FIFO. Enqueue at back, dequeue at front.",
+            "Deque = double-ended. O(1) push and pop on BOTH ends, plus O(1) random access.",
+            "All STL queue/deque operations are O(1) amortised; deque internally uses fixed-size blocks.",
+            "std::queue's pop() returns void — call front() first.",
+            "BFS is the canonical queue algorithm: explore by distance from the source.",
+            "Sliding window problems use a deque to keep candidates (e.g. max/min) in monotonic order — O(n) total.",
+            "Circular buffer is the array-based implementation: two indices that wrap modulo capacity.",
+            "When in doubt between queue/stack/array → deque. It's the Swiss army knife of sequence containers."
+          ],
+          pitfalls: [
+            "Calling pop() on an empty queue / deque is undefined behaviour — guard with empty().",
+            "Treating q.pop() as if it returns the popped value (it returns void in C++).",
+            "Using vector as a queue: vec.erase(vec.begin()) is O(n) — slow. Use deque or queue.",
+            "Forgetting to mark a node visited BEFORE pushing it onto the BFS queue — same node enqueued multiple times.",
+            "In a monotonic deque, popping the wrong end — the structure breaks; trace the invariants.",
+            "Mixing front/back semantics between stack (top only) and queue (front + back) — read the spec carefully."
+          ],
           videoId: "fbonDkYsKj0",
           videoSearch: "queue deque c++"
         },
         {
           name: "Monotonic Stack/Queue + Expression Evaluation",
-          explanation: "Detailed notes coming soon. Keep the stack/queue in monotonic (sorted) order for next-greater-element and sliding-window-maximum in O(n). Plus infix→postfix conversion and evaluation.",
+          explanation: `"Monotonic stack" and "monotonic deque" are two of the highest-leverage patterns in DSA — they turn a category of O(n²) brute-force scans into clean O(n) sweeps. Bracketed with these, expression-evaluation problems (postfix evaluation, infix conversion) round out the classic stack-application toolkit.
+
+## Monotonic stack — the idea
+
+A monotonic stack maintains its elements in sorted order (either strictly increasing or strictly decreasing from bottom to top). Whenever a new element would violate the order, you pop until it doesn't. Each element is pushed and popped at most once → O(n) total.
+
+The pattern unlocks all the "next greater / next smaller" problems and the histograms problem. The recipe:
+
+stack<int> st;          // stores indices (usually)
+for each i in [0, n):
+    while (!st.empty() && breaks_monotonicity(a[st.top()], a[i])):
+        do_work_for(st.top());        // settle the popped element
+        st.pop();
+    st.push(i);
+
+## Next Greater Element — the canonical example
+
+For each element, find the next strictly-greater element to its right. Brute force: O(n²). With a monotonic decreasing stack: O(n).
+
+vector<int> nextGreater(vector<int>& a) {
+    int n = a.size();
+    vector<int> ans(n, -1);
+    stack<int> st;        // indices, values DECREASING from bottom to top
+    for (int i = 0; i < n; i++) {
+        while (!st.empty() && a[st.top()] < a[i]) {
+            ans[st.top()] = a[i];     // a[i] is i's next greater
+            st.pop();
+        }
+        st.push(i);
+    }
+    return ans;
+}
+
+## Variants
+
+- **Next Smaller Element** — flip the comparison.
+- **Previous Greater / Smaller** — walk from the LEFT or process in reverse.
+- **Daily Temperatures** — for each day, days-until-warmer. Same algorithm.
+- **Stock Span** — for each day, consecutive days of ≤ price (mirror direction).
+- **Largest Rectangle in Histogram** — combine previous-smaller-left + next-smaller-right.
+
+## Monotonic deque — for sliding window max/min
+
+The stack version processes "from left, find on right". For SLIDING WINDOWS the queue version works the same but with a deque so you can pop from either end.
+
+deque<int> dq;        // stores indices, values DECREASING front→back
+for each i in [0, n):
+    while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();
+    dq.push_back(i);
+    if (dq.front() <= i - k) dq.pop_front();
+    if (i >= k - 1) record(a[dq.front()]);     // window max
+
+Same O(n) total amortised: each index enters and leaves once.
+
+## Expression evaluation — postfix
+
+Postfix (Reverse Polish Notation) is the simplest arithmetic to evaluate. There are NO precedence rules and NO parentheses — order is fully determined by position.
+
+"3 4 + 5 *"   means  ((3 + 4) * 5) = 35
+
+Algorithm: walk the tokens. Push numbers. On an operator, pop the top two, apply, push the result.
+
+int evalPostfix(vector<string>& toks) {
+    stack<int> st;
+    for (auto& t : toks) {
+        if (isOperator(t)) {
+            int b = st.top(); st.pop();
+            int a = st.top(); st.pop();
+            if (t == "+") st.push(a + b);
+            else if (t == "-") st.push(a - b);
+            else if (t == "*") st.push(a * b);
+            else               st.push(a / b);
+        } else {
+            st.push(stoi(t));
+        }
+    }
+    return st.top();
+}
+
+## Infix → Postfix — the Shunting Yard algorithm
+
+Standard human-written math is infix: "3 + 4 * 5". Converting to postfix lets you evaluate without juggling precedence. Dijkstra's Shunting Yard algorithm uses two structures — an output queue and an operator stack:
+
+For each token:
+  if number    → output
+  if operator  → while top-of-stack has >= precedence, pop to output. Push current.
+  if '('       → push.
+  if ')'       → pop to output until '('. Discard the '('.
+At end, pop remaining operators to output.
+
+The output is the postfix form. Then evaluate with the algorithm above.
+
+## When to reach for monotonic stack/queue
+
+The trigger phrase is "for each i, find the next ___ to its left/right that satisfies ___". Or "in a sliding window of size k, what's the max/min/median". Once you spot it, the algorithm is mechanical.`,
+          codeBlocks: [
+            {
+              title: "Next Greater Element — monotonic stack template",
+              code: `vector<int> nextGreater(vector<int>& a) {
+    int n = a.size();
+    vector<int> ans(n, -1);
+    stack<int> st;                       // indices, values DECREASING bottom→top
+    for (int i = 0; i < n; i++) {
+        while (!st.empty() && a[st.top()] < a[i]) {
+            ans[st.top()] = a[i];
+            st.pop();
+        }
+        st.push(i);
+    }
+    return ans;
+}`
+            },
+            {
+              title: "Daily Temperatures — same algorithm, return indices",
+              code: `vector<int> daysUntilWarmer(vector<int>& t) {
+    int n = t.size();
+    vector<int> ans(n, 0);
+    stack<int> st;
+    for (int i = 0; i < n; i++) {
+        while (!st.empty() && t[st.top()] < t[i]) {
+            ans[st.top()] = i - st.top();
+            st.pop();
+        }
+        st.push(i);
+    }
+    return ans;
+}`
+            },
+            {
+              title: "Largest Rectangle in Histogram — two monotonic passes",
+              code: `int largestRectangle(vector<int>& h) {
+    h.push_back(0);                       // sentinel forces all pops
+    stack<int> st;
+    int best = 0;
+    for (int i = 0; i < (int)h.size(); i++) {
+        while (!st.empty() && h[st.top()] > h[i]) {
+            int top = st.top(); st.pop();
+            int width = st.empty() ? i : i - st.top() - 1;
+            best = max(best, h[top] * width);
+        }
+        st.push(i);
+    }
+    return best;
+}`
+            },
+            {
+              title: "Sliding Window Maximum (monotonic deque)",
+              code: `vector<int> maxWindow(vector<int>& a, int k) {
+    deque<int> dq;
+    vector<int> out;
+    for (int i = 0; i < (int)a.size(); i++) {
+        while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();
+        dq.push_back(i);
+        if (dq.front() <= i - k) dq.pop_front();
+        if (i >= k - 1) out.push_back(a[dq.front()]);
+    }
+    return out;
+}`
+            },
+            {
+              title: "Evaluate postfix (Reverse Polish Notation)",
+              code: `int evalPostfix(vector<string>& toks) {
+    stack<int> st;
+    for (auto& t : toks) {
+        if (t == "+" || t == "-" || t == "*" || t == "/") {
+            int b = st.top(); st.pop();
+            int a = st.top(); st.pop();
+            if (t == "+") st.push(a + b);
+            else if (t == "-") st.push(a - b);
+            else if (t == "*") st.push(a * b);
+            else               st.push(a / b);
+        } else {
+            st.push(stoi(t));
+        }
+    }
+    return st.top();
+}`
+            },
+            {
+              title: "Infix → Postfix (Shunting Yard, simplified for + - * /)",
+              code: `int prec(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    return 0;
+}
+
+string toPostfix(const string& s) {
+    string out;
+    stack<char> ops;
+    for (char c : s) {
+        if (isdigit(c)) out.push_back(c);
+        else if (c == '(') ops.push(c);
+        else if (c == ')') {
+            while (!ops.empty() && ops.top() != '(') { out.push_back(ops.top()); ops.pop(); }
+            ops.pop();
+        } else {                          // operator
+            while (!ops.empty() && prec(ops.top()) >= prec(c)) { out.push_back(ops.top()); ops.pop(); }
+            ops.push(c);
+        }
+    }
+    while (!ops.empty()) { out.push_back(ops.top()); ops.pop(); }
+    return out;
+}`
+            }
+          ],
+          complexity: { time: "Monotonic stack/deque: O(n) (each element pushed/popped once); postfix eval O(n); infix→postfix O(n)", space: "O(n) for the auxiliary stack/deque" },
+          keyPoints: [
+            "A monotonic stack keeps elements in strictly increasing or strictly decreasing order from bottom to top.",
+            "Each element pushed/popped at most once → total work is O(n), not O(n²).",
+            "Next Greater Element, Daily Temperatures, Stock Span, Largest Rectangle — all monotonic stack.",
+            "Monotonic deque is the same idea for SLIDING-WINDOW max/min: pop from back to maintain order, pop from front when out of window.",
+            "Postfix (Reverse Polish Notation) has no precedence — push numbers, on operator pop two and apply.",
+            "Infix → postfix via Shunting Yard: operator stack + output, governed by precedence.",
+            "The trigger phrases: 'next greater/smaller', 'sliding window max/min', 'span'.",
+            "Largest Rectangle in Histogram combines previous-smaller-left + next-smaller-right; one pass with a sentinel does it."
+          ],
+          pitfalls: [
+            "Storing values instead of indices on the stack — you lose distance/position info.",
+            "Mis-orienting the comparison (< vs <=) — strict vs non-strict changes how ties are handled.",
+            "Forgetting to drain the stack at the end (sentinel trick fixes this).",
+            "In the deque version, popping from the wrong end — the invariant breaks silently.",
+            "Postfix eval with operands popped in the wrong order: it's a then b for binary ops, NOT b then a.",
+            "Shunting Yard with unary minus or function calls — needs special cases not shown in the basic algorithm."
+          ],
           videoId: "5B6jw4wOJR0",
           videoSearch: "monotonic stack expression evaluation"
         },
         {
           name: "Hashing Fundamentals (hash functions, collisions)",
-          explanation: "Detailed notes coming soon. What is a hash function? Why does hashing give O(1) average lookup? Collision handling: chaining vs open addressing, and when each degrades to O(n).",
+          explanation: `Hashing is the trick that makes hash maps and hash sets O(1) average. The basic idea: take any input (a string, an int, a struct), pass it through a hash function that produces a fixed-size integer, and use that integer (mod table size) as an index into a backing array. Lookup, insert, and delete all become array indexing — constant time. The reason it works in practice is that good hash functions scatter inputs uniformly, so collisions (two inputs landing in the same slot) are rare.
+
+This concept is about the THEORY: what makes a good hash function, how collisions are handled, and why the average-case O(1) can degrade to O(n).
+
+## What a hash function is
+
+A hash function h takes an input from some universe U (could be all 32-bit ints, all strings, all structs) and produces an integer in [0, M) where M is the table size.
+
+h: U → [0, M)
+
+Two key properties:
+1. **Deterministic** — same input always returns the same hash.
+2. **Uniform** — outputs should spread evenly across [0, M) for a random set of inputs.
+
+A third nice property: **avalanche** — flipping one input bit should flip about half the output bits. This is what makes adversarial collision-finding hard.
+
+The cost of computing h(x) should be O(|x|): O(1) for ints, O(L) for an L-character string.
+
+## Common hash functions
+
+**Modular hash for integers**: h(x) = x mod M. Works if x is fairly random; terrible if inputs are spaced regularly (multiples of M all collide).
+
+**Multiplicative hash**: h(x) = floor(M * frac(x * A)) for an irrational A like the golden-ratio constant. Smooths out regular inputs.
+
+**Polynomial hash for strings**: h(s) = (s[0]*p^(L-1) + s[1]*p^(L-2) + ... + s[L-1]) mod M for a small prime p (often 31 or 33). std::hash<string> uses something more complex but similar in spirit.
+
+**Cryptographic hashes** (SHA-256, MD5) — overkill for data structures, used for security. Slow.
+
+## Collisions and how to handle them
+
+A collision is when h(x1) == h(x2) for different x1, x2. With M slots and N items, the birthday paradox says you'll hit a collision around N ≈ √M. Two standard ways to cope:
+
+**Chaining** (separate chaining). Each slot holds a linked list (or vector) of all items that hash there. Insert prepends; lookup scans the chain. Average chain length = N / M = load factor α. Lookup is O(1 + α). Most STL implementations of unordered_map use chaining.
+
+**Open addressing** (probing). Each slot holds at most one item. On collision, probe to another slot by a fixed sequence (linear: try slot+1, slot+2, ...; quadratic: try slot+1, slot+4, slot+9, ...; double hashing: jump by a second hash). No extra memory per slot, better cache behaviour, but requires careful deletion (tombstones) and is more sensitive to load factor.
+
+## Load factor and rehashing
+
+Load factor α = N / M. Performance degrades as α grows:
+- α < 0.5 — fast, low collision rate
+- α ≈ 0.75 — STL's default trigger for rehashing
+- α > 1.0 — chaining still works but slow; open addressing is full
+
+When α exceeds the threshold, the table REHASHES: allocate a new table 2× the size, recompute hashes, reinsert everything. That single insert is O(n), but amortised across many inserts it's still O(1).
+
+## Why worst case is O(n)
+
+If many inputs collide (adversarial inputs OR a bad hash function), all items end up in one chain (or one probe sequence), and lookup degrades to O(n) — same as a linear scan. Real-world attacks have exploited this to DoS servers using hash maps with predictable hash functions.
+
+Defence in modern languages: randomise the hash seed per process so an attacker can't pre-compute collisions. C++ doesn't do this by default; competitive coders sometimes provide a custom hasher with a random seed.
+
+## std::hash and how to extend it
+
+std::hash<T> is specialised for the primitives and std::string. For your own struct, you must specialise std::hash<MyStruct> (or pass a hasher as a template arg). The typical pattern is to combine the hashes of the fields:
+
+struct MyHash {
+    size_t operator()(const MyStruct& s) const {
+        size_t h1 = std::hash<int>{}(s.a);
+        size_t h2 = std::hash<string>{}(s.b);
+        return h1 ^ (h2 << 1);   // simple combine; better recipes exist (boost::hash_combine)
+    }
+};
+
+## When to NOT use a hash structure
+
+When you need order — use map/set instead.
+When inputs are adversarial — provide a randomised hasher.
+When the universe of keys is tiny and dense (e.g. 0..1000) — just use an array. Direct addressing beats hashing.
+When memory is constrained — hash tables have overhead (load factor < 1 means wasted slots).`,
+          codeBlocks: [
+            {
+              title: "Polynomial string hash",
+              code: `// Treats the string as a base-p number. Mod a large prime.
+const int P = 31;
+const int MOD = 1'000'000'007;
+
+long long polyHash(const string& s) {
+    long long h = 0;
+    long long pw = 1;
+    for (char c : s) {
+        h = (h + (c - 'a' + 1) * pw) % MOD;
+        pw = (pw * P) % MOD;
+    }
+    return h;
+}`
+            },
+            {
+              title: "Chained hash table from scratch",
+              code: `class ChainHash {
+    static const int M = 1024;
+    vector<list<pair<int,int>>> table;   // (key, value)
+public:
+    ChainHash() : table(M) {}
+    void set(int key, int val) {
+        auto& chain = table[key % M];
+        for (auto& [k, v] : chain) if (k == key) { v = val; return; }
+        chain.push_back({key, val});
+    }
+    bool get(int key, int& val) {
+        for (auto& [k, v] : table[key % M]) if (k == key) { val = v; return true; }
+        return false;
+    }
+};`
+            },
+            {
+              title: "Open addressing with linear probing",
+              code: `class ProbeHash {
+    static const int M = 1024;
+    vector<int> keys, vals;
+    vector<bool> used;
+public:
+    ProbeHash() : keys(M, 0), vals(M, 0), used(M, false) {}
+    void set(int key, int val) {
+        int i = key % M;
+        while (used[i] && keys[i] != key) i = (i + 1) % M;
+        used[i] = true; keys[i] = key; vals[i] = val;
+    }
+    bool get(int key, int& val) {
+        int i = key % M;
+        while (used[i]) {
+            if (keys[i] == key) { val = vals[i]; return true; }
+            i = (i + 1) % M;
+        }
+        return false;
+    }
+};`
+            },
+            {
+              title: "Custom hash for std::pair to use in unordered_set/map",
+              code: `struct PairHash {
+    template<class T1, class T2>
+    size_t operator()(const pair<T1, T2>& p) const {
+        size_t h1 = hash<T1>{}(p.first);
+        size_t h2 = hash<T2>{}(p.second);
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));   // boost::hash_combine
+    }
+};
+
+unordered_set<pair<int,int>, PairHash> seen;
+seen.insert({3, 4});`
+            },
+            {
+              title: "Randomised hash to defend against adversarial inputs",
+              code: `struct SaltedHash {
+    static const uint64_t SALT;
+    size_t operator()(uint64_t x) const {
+        x = (x ^ SALT) * 0xbf58476d1ce4e5b9ULL;
+        x = (x ^ (x >> 31));
+        return x;
+    }
+};
+const uint64_t SaltedHash::SALT =
+    chrono::steady_clock::now().time_since_epoch().count();
+
+unordered_set<uint64_t, SaltedHash> s;`
+            },
+            {
+              title: "Direct addressing — when keys are small ints, beat hashing",
+              code: `// If keys are in [0, 1000], a plain array is faster than any hash table.
+const int N = 1001;
+int present[N] = {0};                  // present[k] = count of key k
+void add(int k) { present[k]++; }
+int  count(int k) { return present[k]; }`
+            }
+          ],
+          complexity: { time: "Insert/lookup/delete O(1) average; O(n) worst case (collisions)", space: "O(M) table + O(n) entries; typical α = 0.75" },
+          keyPoints: [
+            "A hash function maps keys to integers in [0, M); good ones are deterministic and uniform.",
+            "Chaining: each slot holds a list of colliders — handles any load factor, simple.",
+            "Open addressing: probe to next slot on collision — better cache, more sensitive to load.",
+            "Load factor α = N / M; rehash (double M, reinsert all) when α exceeds ~0.75.",
+            "Average O(1); worst case O(n) when all keys collide — guard against adversarial inputs.",
+            "std::hash is specialised for primitives and std::string; provide your own for custom types.",
+            "Use a 'boost::hash_combine' style mixer when hashing multiple fields together.",
+            "For tiny dense key ranges, a plain array (direct addressing) beats any hash table."
+          ],
+          pitfalls: [
+            "Using a bad hash like x % small_prime — regular inputs collide catastrophically.",
+            "Forgetting that unordered_map's worst case is O(n) per op — TLE on adversarial inputs.",
+            "Custom hash that produces all zeros for some inputs — silent perf disaster.",
+            "Modifying an object after inserting it into a hash structure — its hash changes; lookups fail.",
+            "Using floats as hash keys — equality is unreliable; round or use a tolerance.",
+            "Open-addressing delete without tombstones — leaves a hole that breaks probe sequences."
+          ],
           videoId: "0kfM_YEzR94",
           videoSearch: "hashing hash table collisions"
         },
         {
           name: "Frequency Counting & Lookup Patterns",
-          explanation: "Detailed notes coming soon. The everyday use of hash maps and hash sets — counting occurrences, deduplication, lookup-in-loop, and turning O(n²) brute force into O(n).",
+          explanation: `Once you have unordered_map and unordered_set in your toolkit, an enormous number of array/string problems collapse from O(n²) brute force to O(n) hash-table solutions. The trick is usually the same: as you walk the array, build a small lookup structure that lets the NEXT element answer its question in O(1).
+
+This concept catalogues the half-dozen recurring patterns. Recognise the pattern, write 10 lines of code, done.
+
+## Pattern 1 — Frequency table
+
+Count occurrences of each value. Use map (for sorted output) or unordered_map (for raw speed). The map[k]++ idiom auto-inserts missing keys at 0.
+
+unordered_map<int,int> cnt;
+for (int x : a) cnt[x]++;
+
+Applications:
+- Majority element (count > n/2).
+- Most frequent element (max over the map).
+- Anagram check (compare frequency tables).
+- Top-K frequent (frequency table + bucket sort or heap).
+- Sort characters by frequency.
+
+## Pattern 2 — Seen-before set
+
+Walk the array once. For each element, check if you've seen it (or something complementary). Update the set.
+
+unordered_set<int> seen;
+for (int x : a) {
+    if (seen.count(needed_for(x))) return YES;
+    seen.insert(x);
+}
+
+Applications:
+- Contains Duplicate.
+- Happy Number (cycle detection on the digit-square sequence).
+- Longest Substring Without Repeating Characters (sliding window + set).
+- First non-repeating character (frequency table + scan).
+
+## Pattern 3 — Value → index map (last-seen / first-seen)
+
+Same as seen-before but you also remember WHERE you saw it. Lets you answer "complementary" or "distance" questions.
+
+unordered_map<int,int> idx;
+for (int i = 0; i < n; i++) {
+    int need = target - a[i];
+    if (idx.count(need)) return { idx[need], i };
+    idx[a[i]] = i;
+}
+
+This is the Two Sum template. Variants:
+- Contains Nearby Duplicate (index distance ≤ k).
+- Longest substring with k distinct (sliding window + map of char→count).
+- Subarray sum equals K (map of prefix sum → first index).
+
+## Pattern 4 — Group by key
+
+Bucket items into groups based on a derived key.
+
+unordered_map<string, vector<string>> groups;
+for (string& s : words) groups[canonical(s)].push_back(s);
+
+Applications:
+- Group Anagrams (key = sorted string).
+- Group strings by length / first char / hash.
+- Group intervals by overlap class.
+
+## Pattern 5 — Two-set intersection / difference
+
+For "elements in both" or "in A but not in B" types of questions.
+
+unordered_set<int> sa(a.begin(), a.end());
+vector<int> intersection;
+for (int x : b) if (sa.count(x)) intersection.push_back(x);
+
+Applications: Intersection of Two Arrays, Common Elements, Distinct Common Subarray Sums.
+
+## Pattern 6 — Prefix sum + map (the powerful one)
+
+Hash the running PREFIX sum (not the values). Lets you detect "subarray sum equals K" in O(n).
+
+The idea: prefix[i] - prefix[j] = sum of subarray (j+1..i). So we want prefix[i] - K = prefix[j] for some j < i. Look up (prefix[i] - K) in the map of prefix sums seen so far.
+
+int subarraySumK(vector<int>& a, int K) {
+    unordered_map<long long, int> seen{{0, 1}};   // empty-prefix sentinel
+    long long sum = 0;
+    int count = 0;
+    for (int x : a) {
+        sum += x;
+        if (seen.count(sum - K)) count += seen[sum - K];
+        seen[sum]++;
+    }
+    return count;
+}
+
+This single pattern solves: Subarray Sum Equals K, Longest Subarray with Sum K, Continuous Subarray Sum divisible by K, Binary Subarray with Sum, and friends.
+
+## Why all this works
+
+A hash structure gives O(1) average lookup. So each pass through n elements costs O(n) — replacing the inner loop of a brute-force O(n²) search. The trade is O(n) extra memory, which is almost always worth it.
+
+## When NOT to use hashing
+
+When you need order — use map/set or sort the array.
+When you need range queries — use a Fenwick tree or segment tree.
+When the universe of keys is tiny — direct addressing (array) is faster.
+When memory is critical — bitset for small sets, or accept the O(n log n) sorted approach.`,
+          codeBlocks: [
+            {
+              title: "Two Sum — value→index map",
+              code: `vector<int> twoSum(vector<int>& a, int target) {
+    unordered_map<int,int> idx;             // value → index
+    for (int i = 0; i < (int)a.size(); i++) {
+        int need = target - a[i];
+        if (idx.count(need)) return { idx[need], i };
+        idx[a[i]] = i;
+    }
+    return {};
+}`
+            },
+            {
+              title: "Valid Anagram — compare frequency tables",
+              code: `bool isAnagram(const string& a, const string& b) {
+    if (a.size() != b.size()) return false;
+    int cnt[26] = {0};
+    for (char c : a) cnt[c - 'a']++;
+    for (char c : b) if (--cnt[c - 'a'] < 0) return false;
+    return true;
+}`
+            },
+            {
+              title: "Group Anagrams — group by sorted key",
+              code: `vector<vector<string>> groupAnagrams(vector<string>& s) {
+    unordered_map<string, vector<string>> g;
+    for (auto& w : s) {
+        string key = w;
+        sort(key.begin(), key.end());
+        g[key].push_back(w);
+    }
+    vector<vector<string>> out;
+    for (auto& [_, v] : g) out.push_back(v);
+    return out;
+}`
+            },
+            {
+              title: "Subarray Sum Equals K — prefix sum + map",
+              code: `int subarraySumK(vector<int>& a, int K) {
+    unordered_map<long long, int> seen{{0, 1}};   // empty prefix
+    long long sum = 0;
+    int count = 0;
+    for (int x : a) {
+        sum += x;
+        if (seen.count(sum - K)) count += seen[sum - K];
+        seen[sum]++;
+    }
+    return count;
+}`
+            },
+            {
+              title: "Longest Substring Without Repeating Characters",
+              code: `int longestUnique(const string& s) {
+    unordered_map<char, int> last;          // char → most recent index
+    int best = 0, start = 0;
+    for (int i = 0; i < (int)s.size(); i++) {
+        if (last.count(s[i]) && last[s[i]] >= start)
+            start = last[s[i]] + 1;
+        last[s[i]] = i;
+        best = max(best, i - start + 1);
+    }
+    return best;
+}`
+            },
+            {
+              title: "Top K Frequent Elements — frequency table + heap",
+              code: `vector<int> topKFrequent(vector<int>& a, int k) {
+    unordered_map<int,int> cnt;
+    for (int x : a) cnt[x]++;
+    // min-heap of (count, value); keep size k.
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;
+    for (auto& [v, c] : cnt) {
+        pq.push({c, v});
+        if ((int)pq.size() > k) pq.pop();
+    }
+    vector<int> out;
+    while (!pq.empty()) { out.push_back(pq.top().second); pq.pop(); }
+    return out;
+}`
+            }
+          ],
+          complexity: { time: "Per scan O(n) with O(1) hash ops; total O(n) for all patterns above", space: "O(n) for the auxiliary map/set" },
+          keyPoints: [
+            "Frequency table: cnt[x]++ in a single pass — anagram, majority, top-K all use this.",
+            "Seen-before set: walk array, ask 'have I seen the complement?' — Two Sum is the template.",
+            "Value→index map remembers WHERE you saw each value — solves distance / pairing problems.",
+            "Group by key: bucket items via map<Key, vector<Item>> — anagrams, scheduling.",
+            "Prefix sum + map is the killer pattern for subarray-sum questions: O(n) instead of O(n²) or O(n³).",
+            "Replace the inner O(n) loop of a brute-force solution with an O(1) hash lookup — universal speedup.",
+            "When keys are characters or small ints, a fixed array beats unordered_map — direct addressing.",
+            "When ORDER matters, switch to map (sorted) — same patterns, O(log n) per op."
+          ],
+          pitfalls: [
+            "Using m[k] to test presence — accidentally inserts k with value 0. Use count() or find().",
+            "Forgetting the {0, 1} sentinel in prefix-sum-map — misses subarrays starting at index 0.",
+            "Comparing character frequency tables of different lengths — different sizes are never anagrams.",
+            "Using sorted-string as a key (for anagrams) is fine, but O(L log L) per word — fine for short strings.",
+            "Hash structure with custom struct keys — needs std::hash specialisation, not just operator==.",
+            "Modifying a key after insertion — its hash changes; lookups fail silently."
+          ],
           videoId: "2yCsrWvHcKQ",
           videoSearch: "frequency counting hashmap"
         }
