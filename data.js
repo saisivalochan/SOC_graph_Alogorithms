@@ -1644,6 +1644,7 @@ public:
             "On 2-D prefix sums, mixing up 0-indexed input with 1-indexed prefix array.",
             "Using Kadane's on circular arrays — needs a small variant (max(kadane, total - minKadane))."
           ],
+          videoId: "6PxU4rfnf4Q",
           videoSearch: "kadane algorithm maximum subarray prefix sum"
         },
         {
@@ -1837,6 +1838,7 @@ n = n & (n - 1);
             "__builtin_ctz(0) and __builtin_clz(0) are undefined behaviour — guard with n != 0.",
             "Comparing (x & (1 << i)) with true/false directly — the result is an int, not a bool. Compare with != 0 to be explicit."
           ],
+          videoId: "r-u4uh3QvsQ",
           videoSearch: "bit manipulation xor c++"
         }
       ],
