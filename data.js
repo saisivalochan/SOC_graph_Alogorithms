@@ -6712,30 +6712,1141 @@ int maxXor(BTrie* root, int x) {
       concepts: [
         {
           name: "Graph Representations (adj list, matrix, edge list)",
-          explanation: "Detailed notes coming soon. Three ways to encode a graph: adjacency list (O(V+E) space), adjacency matrix (O(V²)), and edge list. Each suits different algorithms.",
+          explanation: `A graph is a set of vertices (nodes) and edges (connections between them). Edges can be DIRECTED (a one-way arrow) or UNDIRECTED (a two-way link); they can carry WEIGHTS (numbers) or be unweighted. The first decision in any graph problem is HOW to represent it in code. Three standard choices, each with a clear trade-off.
+
+This concept is purely about representation. The next two lessons (BFS, DFS) will USE these representations to actually traverse graphs.
+
+## The vocabulary
+
+V = number of vertices, often called n.
+E = number of edges, often called m.
+For a SIMPLE graph (no parallel edges, no self-loops), E can be as small as 0 or as large as V·(V-1)/2 for undirected (or V² for directed).
+DENSE graph: E close to V². SPARSE: E close to V.
+
+Most real-world graphs are SPARSE — social networks, road networks, the web. Algorithms and representations should optimise for that.
+
+## Adjacency list (the everyday default)
+
+For each vertex, store a list of its neighbours. In C++:
+
+vector<vector<int>> adj(V);                      // unweighted
+vector<vector<pair<int,int>>> adj(V);            // weighted: pairs of (neighbour, weight)
+
+To add an undirected edge between u and v:
+adj[u].push_back(v);
+adj[v].push_back(u);                              // both directions
+
+For directed, only the first line.
+
+**Space**: O(V + E). Each vertex contributes O(1) for its slot, each edge contributes O(1) per endpoint.
+**Iterate neighbours of u**: O(degree(u)).
+**Check if edge (u, v) exists**: O(degree(u)) — must scan u's list.
+**Add edge**: O(1).
+**Remove edge**: O(degree(u)) — must find and erase.
+
+The clear winner for sparse graphs and the default in 95% of problems.
+
+## Adjacency matrix
+
+A V × V boolean matrix (or weight matrix) where mat[u][v] = true (or weight) iff there's an edge from u to v.
+
+vector<vector<int>> mat(V, vector<int>(V, 0));
+mat[u][v] = mat[v][u] = 1;                        // undirected, unweighted
+
+**Space**: O(V²) regardless of E.
+**Check edge (u, v)**: O(1).
+**Iterate neighbours of u**: O(V) — must scan the row.
+**Add/remove edge**: O(1).
+
+Wins when V is small (< 1000) or when the graph is genuinely DENSE and you need lots of edge-existence queries. Loses badly on sparse graphs because of the V² memory.
+
+## Edge list
+
+A flat list of all edges. Each edge is a tuple (u, v, weight).
+
+vector<tuple<int,int,int>> edges;    // (u, v, w)
+
+**Space**: O(E).
+**Iterate ALL edges**: O(E).
+**Iterate neighbours of u**: O(E) — must scan all edges. Slow.
+**Edge existence**: O(E) without a hash.
+
+Wins for algorithms that explicitly need to process all edges (Kruskal's MST sorts the edge list; Bellman-Ford relaxes each edge V-1 times).
+
+## Side-by-side cheat sheet
+
+| Operation                | Adj List         | Adj Matrix       | Edge List       |
+|--------------------------|------------------|------------------|-----------------|
+| Space                    | O(V + E)         | O(V²)            | O(E)            |
+| Neighbours of u          | O(deg u)         | O(V)             | O(E)            |
+| Edge (u, v) exists?      | O(deg u)         | O(1)             | O(E)            |
+| Add edge                 | O(1)             | O(1)             | O(1)            |
+| Remove edge              | O(deg u)         | O(1)             | O(E)            |
+| Iterate all edges        | O(V + E)         | O(V²)            | O(E)            |
+
+## Other representations (advanced)
+
+**Compressed Sparse Row (CSR)** — a single flat array of neighbours with a parallel offset array. Cache-friendly, used in production graph libraries. Same asymptotic as adjacency list, much smaller constants.
+
+**Implicit graphs** — for grids and BFS-style problems, you don't store the graph explicitly. The "neighbours" of cell (r, c) are computed on the fly: (r±1, c), (r, c±1).
+
+**Hash-map adjacency** — unordered_map<int, vector<int>> when vertices are sparse integers or strings.
+
+## Directed vs undirected
+
+For an undirected edge, you store it on BOTH endpoints' lists (or, in the matrix, set BOTH mat[u][v] and mat[v][u]). For a directed edge, only the source.
+
+For directed graphs you also often want the REVERSE-adjacency list (who points TO u?), e.g. for SCC algorithms — store it as a parallel data structure.
+
+## Weighted graphs
+
+In the adjacency list, store pairs (neighbour, weight). In the matrix, the cell holds the weight directly (use a sentinel like INT_MAX for "no edge"). Most weighted-graph algorithms (Dijkstra, Bellman-Ford, MST) assume specific weight properties.
+
+## How to choose
+
+- Default: adjacency list. Always.
+- V < 500 and you need edge-existence checks: adjacency matrix.
+- Algorithm that processes edges as a unit (Kruskal, Bellman-Ford): edge list.
+- Implicit graph (grids, mazes, state-space search): don't store at all; compute neighbours on the fly.`,
+          codeBlocks: [
+            {
+              title: "Adjacency list — read a graph from input",
+              code: `int V, E;
+cin >> V >> E;
+vector<vector<int>> adj(V);
+for (int i = 0; i < E; i++) {
+    int u, v;
+    cin >> u >> v;
+    adj[u].push_back(v);
+    adj[v].push_back(u);             // omit for directed graphs
+}
+
+// Print neighbours of vertex 0
+for (int nb : adj[0]) cout << nb << " ";`
+            },
+            {
+              title: "Weighted adjacency list",
+              code: `vector<vector<pair<int,int>>> adj(V);   // (neighbour, weight)
+for (int i = 0; i < E; i++) {
+    int u, v, w;
+    cin >> u >> v >> w;
+    adj[u].push_back({v, w});
+    adj[v].push_back({u, w});
+}
+
+// Walk u's neighbours
+for (auto [nb, w] : adj[u]) cout << nb << "(" << w << ") ";`
+            },
+            {
+              title: "Adjacency matrix",
+              code: `int V; cin >> V;
+vector<vector<int>> mat(V, vector<int>(V, 0));    // 0 = no edge
+int E; cin >> E;
+for (int i = 0; i < E; i++) {
+    int u, v;
+    cin >> u >> v;
+    mat[u][v] = mat[v][u] = 1;
+}
+
+if (mat[3][7]) cout << "edge exists\\n";          // O(1) check`
+            },
+            {
+              title: "Edge list",
+              code: `int V, E; cin >> V >> E;
+vector<tuple<int,int,int>> edges;
+for (int i = 0; i < E; i++) {
+    int u, v, w;
+    cin >> u >> v >> w;
+    edges.push_back({u, v, w});
+}
+
+// Sort by weight (e.g. for Kruskal's MST)
+sort(edges.begin(), edges.end(), [](const auto& a, const auto& b) {
+    return get<2>(a) < get<2>(b);
+});`
+            },
+            {
+              title: "Implicit graph — grid neighbours computed on the fly",
+              code: `const int dr[] = {-1, 1, 0, 0};
+const int dc[] = { 0, 0,-1, 1};
+
+void visitNeighbours(vector<vector<int>>& g, int r, int c) {
+    int R = g.size(), C = g[0].size();
+    for (int k = 0; k < 4; k++) {
+        int nr = r + dr[k];
+        int nc = c + dc[k];
+        if (nr < 0 || nr >= R || nc < 0 || nc >= C) continue;
+        // process g[nr][nc]
+    }
+}`
+            },
+            {
+              title: "Hash-map adjacency for string-keyed graphs",
+              code: `unordered_map<string, vector<string>> friends;
+friends["alice"].push_back("bob");
+friends["alice"].push_back("carol");
+friends["bob"].push_back("alice");
+
+for (auto& f : friends["alice"]) cout << f << " ";`
+            }
+          ],
+          complexity: { time: "Depends on representation — see table in explanation", space: "Adj list O(V+E); matrix O(V²); edge list O(E)" },
+          keyPoints: [
+            "Three representations: adjacency list (default), adjacency matrix (small/dense), edge list (Kruskal/Bellman-Ford).",
+            "Adjacency list uses O(V + E) memory — fits sparse graphs naturally.",
+            "Adjacency matrix is O(V²) memory but gives O(1) edge-existence checks.",
+            "Edge list is the right choice when the algorithm processes edges as a unit.",
+            "For undirected edges, add BOTH directions to the adjacency list.",
+            "Weighted graphs: store (neighbour, weight) pairs in the list or weight directly in the matrix.",
+            "Implicit graphs (grids, state spaces) don't need explicit storage — compute neighbours on demand.",
+            "When V < 1000 and queries are dense, matrix can beat list in practice; otherwise prefer the list."
+          ],
+          pitfalls: [
+            "Forgetting to add the reverse edge for undirected graphs — turns it into a directed graph silently.",
+            "Using an adjacency matrix for V = 10⁵ — 40 GB of memory; will crash.",
+            "Reading edges as 1-indexed but using 0-indexed arrays (or vice-versa).",
+            "Storing duplicate edges in the adjacency list when you add the same edge twice.",
+            "Iterating an edge list to find a vertex's neighbours — O(E) per call; switch to list/matrix.",
+            "Using vector<set<int>> 'just in case you need to dedup' — adds log factor for usually no reason."
+          ],
           videoId: "3pr9Ce9vECc",
           videoSearch: "graph representation adjacency list matrix"
         },
         {
           name: "Breadth-First Search (BFS)",
-          explanation: "Detailed notes coming soon. Explore level by level using a queue. On unweighted graphs BFS finds the shortest path. Multi-source BFS handles 'flood' problems.",
+          explanation: `BFS is the graph-traversal algorithm that explores vertices in order of distance from a starting vertex. Start visits the source; first iteration visits all vertices 1 edge away; next iteration visits everything 2 edges away; and so on. It uses a queue and runs in O(V + E). On an UNWEIGHTED graph, BFS finds the SHORTEST PATH from source to any reachable vertex — guaranteed.
+
+BFS is one of the two pillars of graph algorithms (the other is DFS, next concept). Almost every "shortest path on a grid", "minimum steps to reach state X", and "level-by-level" tree/graph problem is a BFS in disguise.
+
+## The algorithm
+
+queue<int> q;
+vector<bool> visited(n, false);
+
+visited[src] = true;
+q.push(src);
+while (!q.empty()) {
+    int u = q.front(); q.pop();
+    for (int v : adj[u]) {
+        if (!visited[v]) {
+            visited[v] = true;
+            q.push(v);
+        }
+    }
+}
+
+The KEY rule: mark visited BEFORE pushing onto the queue, not after popping. If you mark on pop, the same vertex can be pushed multiple times, blowing memory and possibly breaking distance calculations.
+
+## Tracking distances
+
+To find the shortest distance from src to every reachable vertex:
+
+vector<int> dist(n, -1);
+dist[src] = 0;
+queue<int> q; q.push(src);
+while (!q.empty()) {
+    int u = q.front(); q.pop();
+    for (int v : adj[u]) {
+        if (dist[v] == -1) {
+            dist[v] = dist[u] + 1;
+            q.push(v);
+        }
+    }
+}
+
+dist[v] is the SHORTEST number of edges from src to v. -1 means unreachable.
+
+## Tracking the path
+
+Same as above but also record the parent:
+
+vector<int> parent(n, -1);
+// ... in the if (dist[v] == -1) block:
+parent[v] = u;
+
+To reconstruct the path from src to t:
+vector<int> path;
+for (int cur = t; cur != -1; cur = parent[cur]) path.push_back(cur);
+reverse(path.begin(), path.end());
+
+## Multi-source BFS — the flood pattern
+
+Instead of starting from one source, push ALL sources onto the queue at once with distance 0. The algorithm then finds, for each vertex, the distance to the NEAREST source.
+
+Used for "rotting oranges" (every rotten orange is a source, propagate), "01 matrix" (every 0 is a source, find distance from each cell to its nearest 0), "walls and gates" (every gate is a source).
+
+## BFS on a grid (implicit graph)
+
+Most grid problems don't store an explicit graph — the neighbours of (r, c) are the 4 (or 8) adjacent cells. Just replace adj[u] with the four neighbour computations:
+
+const int dr[] = {-1, 1, 0, 0};
+const int dc[] = { 0, 0,-1, 1};
+
+queue<pair<int,int>> q;
+q.push({sr, sc});
+visited[sr][sc] = true;
+while (!q.empty()) {
+    auto [r, c] = q.front(); q.pop();
+    for (int k = 0; k < 4; k++) {
+        int nr = r + dr[k], nc = c + dc[k];
+        if (nr<0 || nr>=R || nc<0 || nc>=C || visited[nr][nc]) continue;
+        visited[nr][nc] = true;
+        q.push({nr, nc});
+    }
+}
+
+## When BFS beats DFS
+
+- **Shortest path on an unweighted graph** — BFS gives it directly.
+- **Minimum steps to reach a state** — BFS over the state space.
+- **Level-by-level exploration** (right-side view, level averages, etc.) — natural fit.
+- **Avoiding deep recursion stack** — BFS uses a queue, not the call stack.
+
+## When DFS beats BFS
+
+- **Topological sort, cycle detection, SCC** — DFS' finish-time information.
+- **Path-tracking / backtracking** — DFS keeps the path on the recursion stack.
+- **Subtree/component aggregation** — DFS combines child answers naturally.
+
+## 0-1 BFS — bonus
+
+For graphs whose edges have weights 0 or 1, you can find shortest paths in O(V + E) using a DEQUE: push to front for weight-0 edges, push to back for weight-1 edges. Like BFS but smarter.
+
+For arbitrary non-negative weights, use Dijkstra (Week 6).
+
+## Complexity
+
+O(V + E) time, O(V) space (queue + visited array). For a grid with R × C cells, that's O(R · C).`,
+          codeBlocks: [
+            {
+              title: "BFS — visit every reachable vertex",
+              code: `void bfs(int src, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<bool> visited(n, false);
+    queue<int> q;
+    visited[src] = true;
+    q.push(src);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        cout << u << " ";
+        for (int v : adj[u]) if (!visited[v]) {
+            visited[v] = true;
+            q.push(v);
+        }
+    }
+}`
+            },
+            {
+              title: "BFS that returns shortest distances",
+              code: `vector<int> bfsDist(int src, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<int> dist(n, -1);
+    dist[src] = 0;
+    queue<int> q; q.push(src);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : adj[u]) if (dist[v] == -1) {
+            dist[v] = dist[u] + 1;
+            q.push(v);
+        }
+    }
+    return dist;
+}`
+            },
+            {
+              title: "Reconstruct the path from src to target",
+              code: `vector<int> shortestPath(int src, int t, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<int> parent(n, -1);
+    vector<bool> visited(n, false);
+    queue<int> q; q.push(src); visited[src] = true;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        if (u == t) break;
+        for (int v : adj[u]) if (!visited[v]) {
+            visited[v] = true;
+            parent[v] = u;
+            q.push(v);
+        }
+    }
+    if (!visited[t]) return {};
+    vector<int> path;
+    for (int cur = t; cur != -1; cur = parent[cur]) path.push_back(cur);
+    reverse(path.begin(), path.end());
+    return path;
+}`
+            },
+            {
+              title: "BFS on a grid (implicit graph)",
+              code: `int shortestGrid(vector<vector<int>>& g, int sr, int sc, int tr, int tc) {
+    int R = g.size(), C = g[0].size();
+    vector<vector<int>> dist(R, vector<int>(C, -1));
+    queue<pair<int,int>> q;
+    dist[sr][sc] = 0;
+    q.push({sr, sc});
+    const int dr[] = {-1, 1, 0, 0};
+    const int dc[] = { 0, 0,-1, 1};
+    while (!q.empty()) {
+        auto [r, c] = q.front(); q.pop();
+        if (r == tr && c == tc) return dist[r][c];
+        for (int k = 0; k < 4; k++) {
+            int nr = r + dr[k], nc = c + dc[k];
+            if (nr<0 || nr>=R || nc<0 || nc>=C) continue;
+            if (g[nr][nc] == 1 || dist[nr][nc] != -1) continue;   // 1 = wall
+            dist[nr][nc] = dist[r][c] + 1;
+            q.push({nr, nc});
+        }
+    }
+    return -1;
+}`
+            },
+            {
+              title: "Multi-source BFS — Rotting Oranges",
+              code: `int rottenSecs(vector<vector<int>>& g) {
+    int R = g.size(), C = g[0].size(), fresh = 0;
+    queue<pair<int,int>> q;
+    for (int r = 0; r < R; r++) for (int c = 0; c < C; c++) {
+        if (g[r][c] == 2) q.push({r, c});
+        else if (g[r][c] == 1) fresh++;
+    }
+    int t = 0;
+    const int dr[] = {-1, 1, 0, 0}, dc[] = {0, 0,-1, 1};
+    while (!q.empty() && fresh > 0) {
+        int sz = q.size();
+        for (int i = 0; i < sz; i++) {
+            auto [r, c] = q.front(); q.pop();
+            for (int k = 0; k < 4; k++) {
+                int nr = r + dr[k], nc = c + dc[k];
+                if (nr<0 || nr>=R || nc<0 || nc>=C || g[nr][nc] != 1) continue;
+                g[nr][nc] = 2; fresh--;
+                q.push({nr, nc});
+            }
+        }
+        t++;
+    }
+    return fresh ? -1 : t;
+}`
+            },
+            {
+              title: "0-1 BFS with a deque",
+              code: `vector<int> zeroOneBFS(int src, vector<vector<pair<int,int>>>& adj) {
+    int n = adj.size();
+    vector<int> dist(n, INT_MAX);
+    dist[src] = 0;
+    deque<int> dq; dq.push_front(src);
+    while (!dq.empty()) {
+        int u = dq.front(); dq.pop_front();
+        for (auto [v, w] : adj[u]) {                   // w is 0 or 1
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                if (w == 0) dq.push_front(v);
+                else        dq.push_back(v);
+            }
+        }
+    }
+    return dist;
+}`
+            }
+          ],
+          complexity: { time: "O(V + E) for explicit graphs; O(R · C) for grids", space: "O(V) for queue + visited (or distance) array" },
+          keyPoints: [
+            "BFS explores vertices in order of distance from the source — level by level.",
+            "On an UNWEIGHTED graph, BFS gives the shortest path.",
+            "Mark visited BEFORE pushing — otherwise the same vertex gets enqueued repeatedly.",
+            "dist[v] = dist[u] + 1 gives the shortest distance from src to v.",
+            "Reconstruct paths by storing parent[v] = u during the traversal.",
+            "Multi-source BFS: push all sources at once with distance 0 → distance to NEAREST source for each cell.",
+            "Grid BFS is BFS over an implicit graph — neighbours are computed via direction arrays.",
+            "0-1 BFS uses a deque (push_front for 0-weight edges, push_back for 1-weight)."
+          ],
+          pitfalls: [
+            "Marking visited AFTER pop — same vertex is enqueued many times, O(V²) blow-up.",
+            "Forgetting to push the source onto the queue — algorithm never starts.",
+            "Using a vector<bool> visited but updating dist instead — pick ONE source of truth.",
+            "Grid problems: forgetting to check bounds — out-of-range access crashes.",
+            "Confusing 'distance to NEAREST source' (multi-source BFS) with 'reachable from one source' (single-source).",
+            "BFS on a weighted graph (non-unit weights) — gives WRONG shortest paths. Use Dijkstra."
+          ],
           videoId: "geOBaNYYInc",
           videoSearch: "bfs breadth first search graph"
         },
         {
           name: "Depth-First Search (DFS)",
-          explanation: "Detailed notes coming soon. Explore as deep as possible before backtracking. Recursive or iterative-stack. Foundation for cycle detection, topo sort, and components.",
+          explanation: `DFS is the other half of graph traversal. Where BFS explores wave-by-wave from the source, DFS goes as DEEP as possible down one path before backtracking and trying another. It naturally fits with recursion: the call stack does all the bookkeeping for you. DFS is the foundation for cycle detection, topological sort, connected components, strongly connected components (SCC), bridges and articulation points, and tree-of-life-grid problems.
+
+Like BFS, runs in O(V + E). Unlike BFS, doesn't give shortest paths but DOES give a wealth of structural information (entry/exit times, back-edges, etc.) that BFS doesn't.
+
+## The recursive algorithm
+
+void dfs(int u, vector<vector<int>>& adj, vector<bool>& visited) {
+    visited[u] = true;
+    // PRE-ORDER work (entering u)
+    for (int v : adj[u]) {
+        if (!visited[v]) dfs(v, adj, visited);
+    }
+    // POST-ORDER work (leaving u, all neighbours done)
+}
+
+The base structure is "mark visited; recurse on each unvisited neighbour". That's it. Most DFS algorithms add tiny bits of bookkeeping to this skeleton.
+
+## Iterative DFS with an explicit stack
+
+Mostly used when recursion would overflow on huge graphs. Logic is the same; you manage the stack yourself.
+
+void dfsIter(int src, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<bool> visited(n, false);
+    stack<int> st; st.push(src);
+    while (!st.empty()) {
+        int u = st.top(); st.pop();
+        if (visited[u]) continue;
+        visited[u] = true;
+        for (int v : adj[u]) if (!visited[v]) st.push(v);
+    }
+}
+
+Iterative DFS doesn't process neighbours in the same order as recursive, but it's still a valid DFS.
+
+## Tree edges, back edges, cross edges
+
+During DFS, edges in the graph fall into four categories (for directed graphs; undirected has only two):
+
+- **Tree edge** — leads to an unvisited vertex (forms the DFS tree).
+- **Back edge** — leads to an ancestor in the DFS tree (i.e. a vertex currently on the recursion stack). The defining sign of a CYCLE.
+- **Forward edge** — leads to a descendant already finished.
+- **Cross edge** — leads to a vertex in a different DFS subtree, already finished.
+
+For an UNDIRECTED graph, edges are either tree edges or back edges.
+
+## Cycle detection — undirected
+
+During DFS, if you find an edge to an already-visited vertex that is NOT your direct parent, there's a cycle.
+
+bool hasCycle(int u, int parent, vector<vector<int>>& adj, vector<bool>& visited) {
+    visited[u] = true;
+    for (int v : adj[u]) {
+        if (!visited[v]) {
+            if (hasCycle(v, u, adj, visited)) return true;
+        } else if (v != parent) {
+            return true;
+        }
+    }
+    return false;
+}
+
+## Cycle detection — directed (3-colour DFS)
+
+Use three states: WHITE (unvisited), GRAY (in recursion stack), BLACK (finished). A directed cycle = an edge to a GRAY vertex.
+
+enum { WHITE, GRAY, BLACK };
+vector<int> color;
+
+bool hasCycleDirected(int u, vector<vector<int>>& adj) {
+    color[u] = GRAY;
+    for (int v : adj[u]) {
+        if (color[v] == GRAY) return true;                        // back edge → cycle
+        if (color[v] == WHITE && hasCycleDirected(v, adj)) return true;
+    }
+    color[u] = BLACK;
+    return false;
+}
+
+## DFS for connected components (undirected)
+
+Run DFS from every unvisited vertex. Each launch covers one component.
+
+int components = 0;
+for (int u = 0; u < n; u++) {
+    if (!visited[u]) {
+        dfs(u, adj, visited);
+        components++;
+    }
+}
+
+## DFS for topological sort
+
+For a directed acyclic graph (DAG), the FINISH ORDER of DFS, reversed, gives a topological ordering.
+
+void dfsTopo(int u, vector<vector<int>>& adj, vector<bool>& visited, vector<int>& out) {
+    visited[u] = true;
+    for (int v : adj[u]) if (!visited[v]) dfsTopo(v, adj, visited, out);
+    out.push_back(u);                              // post-order
+}
+// After running from every unvisited vertex:
+reverse(out.begin(), out.end());                   // → topo order
+
+## Entry / exit times — the foundation of advanced algorithms
+
+Record a counter when you enter (tin[u]) and leave (tout[u]) each vertex. The intervals [tin[u], tout[u]] reveal ancestry: u is an ancestor of v iff tin[u] <= tin[v] && tout[v] <= tout[u]. Used for LCA, bridges, articulation points, SCC.
+
+## When to use DFS
+
+- Cycle detection (directed and undirected).
+- Topological sort.
+- Connected components / SCC.
+- Bridges, articulation points (Tarjan's algorithm).
+- Path enumeration (all paths from s to t).
+- Anywhere you need POST-ORDER information (subtree summaries, finish times).
+
+## Pitfalls of recursion
+
+A million-vertex graph means a million-deep recursion → stack overflow. Switch to iterative DFS or BFS if depth is a concern.`,
+          codeBlocks: [
+            {
+              title: "Recursive DFS",
+              code: `void dfs(int u, vector<vector<int>>& adj, vector<bool>& visited) {
+    visited[u] = true;
+    cout << u << " ";
+    for (int v : adj[u]) if (!visited[v]) dfs(v, adj, visited);
+}
+
+void run(int src, vector<vector<int>>& adj) {
+    vector<bool> visited(adj.size(), false);
+    dfs(src, adj, visited);
+}`
+            },
+            {
+              title: "Iterative DFS with a stack",
+              code: `void dfsIter(int src, vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<bool> visited(n, false);
+    stack<int> st; st.push(src);
+    while (!st.empty()) {
+        int u = st.top(); st.pop();
+        if (visited[u]) continue;
+        visited[u] = true;
+        cout << u << " ";
+        for (int v : adj[u]) if (!visited[v]) st.push(v);
+    }
+}`
+            },
+            {
+              title: "Cycle detection — undirected",
+              code: `bool hasCycleUndirected(int u, int parent, vector<vector<int>>& adj, vector<bool>& vis) {
+    vis[u] = true;
+    for (int v : adj[u]) {
+        if (!vis[v]) {
+            if (hasCycleUndirected(v, u, adj, vis)) return true;
+        } else if (v != parent) {
+            return true;                                  // visited and not parent → cycle
+        }
+    }
+    return false;
+}`
+            },
+            {
+              title: "Cycle detection — directed (3-colour DFS)",
+              code: `enum { WHITE = 0, GRAY = 1, BLACK = 2 };
+
+bool dfsCycle(int u, vector<vector<int>>& adj, vector<int>& color) {
+    color[u] = GRAY;
+    for (int v : adj[u]) {
+        if (color[v] == GRAY) return true;                // back edge
+        if (color[v] == WHITE && dfsCycle(v, adj, color)) return true;
+    }
+    color[u] = BLACK;
+    return false;
+}
+
+bool hasDirectedCycle(vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<int> color(n, WHITE);
+    for (int u = 0; u < n; u++)
+        if (color[u] == WHITE && dfsCycle(u, adj, color)) return true;
+    return false;
+}`
+            },
+            {
+              title: "Topological sort via DFS finish order",
+              code: `void dfsTopo(int u, vector<vector<int>>& adj, vector<bool>& vis, vector<int>& out) {
+    vis[u] = true;
+    for (int v : adj[u]) if (!vis[v]) dfsTopo(v, adj, vis, out);
+    out.push_back(u);                                     // post-order
+}
+
+vector<int> topoSort(vector<vector<int>>& adj) {
+    int n = adj.size();
+    vector<bool> vis(n, false);
+    vector<int> out;
+    for (int u = 0; u < n; u++) if (!vis[u]) dfsTopo(u, adj, vis, out);
+    reverse(out.begin(), out.end());
+    return out;
+}`
+            },
+            {
+              title: "DFS on a grid (implicit graph — Number of Islands)",
+              code: `void dfsGrid(vector<vector<char>>& g, int r, int c) {
+    int R = g.size(), C = g[0].size();
+    if (r<0 || r>=R || c<0 || c>=C || g[r][c] != '1') return;
+    g[r][c] = '0';                                        // mark visited by sinking
+    dfsGrid(g, r+1, c); dfsGrid(g, r-1, c);
+    dfsGrid(g, r, c+1); dfsGrid(g, r, c-1);
+}
+
+int numIslands(vector<vector<char>>& g) {
+    int count = 0, R = g.size(), C = g[0].size();
+    for (int r = 0; r < R; r++)
+        for (int c = 0; c < C; c++)
+            if (g[r][c] == '1') { count++; dfsGrid(g, r, c); }
+    return count;
+}`
+            }
+          ],
+          complexity: { time: "O(V + E) for both recursive and iterative", space: "O(V) for visited + O(V) recursion stack" },
+          keyPoints: [
+            "DFS explores as deep as possible, then backtracks. Recursion is the natural implementation.",
+            "Runs in O(V + E) for any representation that lets you enumerate adjacencies in linear time.",
+            "Mark visited BEFORE recursing — same rule as BFS to avoid infinite loops.",
+            "Cycle detection in undirected: a non-parent visited neighbour means a cycle.",
+            "Cycle detection in directed: 3-colour DFS — a back edge to a GRAY vertex means a cycle.",
+            "Topological sort = DFS post-order, reversed. Only valid on a DAG.",
+            "Run DFS from every unvisited vertex to enumerate connected components.",
+            "Entry / exit times (tin / tout) are the basis for bridges, articulation points, LCA, SCC."
+          ],
+          pitfalls: [
+            "Deep recursion on a 10⁶-vertex chain blows the stack — switch to iterative DFS or BFS.",
+            "Undirected cycle detection without the parent check — every edge looks like a back edge.",
+            "Directed cycle detection with only two colours — you'll miss back edges to finished branches.",
+            "Forgetting to launch DFS from every component — disconnected graphs leave vertices untouched.",
+            "Modifying the adjacency list during DFS — iterators invalidate.",
+            "Topological sort attempted on a graph with cycles — silent garbage output."
+          ],
           videoId: "GmZNp9_-imM",
           videoSearch: "dfs depth first search graph"
         },
         {
           name: "Connected Components",
-          explanation: "Detailed notes coming soon. The maximal sets of mutually reachable vertices in an undirected graph. Found via a DFS/BFS launched from each unvisited vertex.",
+          explanation: `A connected component in an UNDIRECTED graph is a maximal set of mutually reachable vertices. Two vertices u and v are in the same component if there's a path from u to v (and therefore from v to u). The whole graph splits naturally into one or more disjoint components.
+
+Finding them is one of the simplest and most useful graph algorithms — a direct application of "DFS/BFS launched from every unvisited vertex". It's the canonical loop pattern for ANY graph algorithm that needs to handle disconnected inputs.
+
+## The standard loop
+
+vector<bool> visited(n, false);
+int components = 0;
+for (int u = 0; u < n; u++) {
+    if (!visited[u]) {
+        dfs(u, adj, visited);          // explore everything reachable from u
+        components++;
+    }
+}
+
+Each launch of dfs(u, ...) visits every vertex in u's component and marks them visited. The next time the outer loop finds an unvisited vertex, you've discovered a NEW component.
+
+## What you can compute per-component
+
+Once you have the components loop in place, almost any per-component statistic falls out for free:
+
+- **Number of components** — just increment a counter on each launch.
+- **Component sizes** — count visited vertices inside each DFS call.
+- **Component max / min / sum** — accumulate during DFS.
+- **Largest component** — track the max size seen.
+- **Which component does u belong to?** — pass a component ID to DFS.
+
+vector<int> compId(n, -1);
+int cid = 0;
+for (int u = 0; u < n; u++) {
+    if (compId[u] == -1) {
+        dfsAssign(u, cid, adj, compId);
+        cid++;
+    }
+}
+
+## DFS vs BFS for components
+
+Either works. DFS is shorter to write (recursion); BFS avoids stack-overflow risk on huge graphs. Same O(V + E).
+
+## Components in a grid
+
+For grid problems (Number of Islands, Number of Provinces, Max Area of Island), the "graph" is implicit — each cell is a vertex, edges go to 4-neighbours (or 8). The pattern is identical: scan every cell; if it's "land" and unvisited, launch DFS/BFS, increment counter.
+
+int numIslands(vector<vector<char>>& g) {
+    int count = 0;
+    for (int r = 0; r < (int)g.size(); r++)
+        for (int c = 0; c < (int)g[0].size(); c++)
+            if (g[r][c] == '1') {
+                sinkIsland(g, r, c);          // DFS or BFS
+                count++;
+            }
+    return count;
+}
+
+## Disjoint Set Union (DSU) — the alternative
+
+DSU is another way to find components, especially when edges arrive ONE AT A TIME (online / streaming). Initialise each vertex as its own component; for each edge (u, v), UNION the two sets. Component count = number of distinct roots. We'll cover DSU in detail in Week 6.
+
+For static (all-edges-known) graphs, BFS/DFS is simpler. For dynamic edge insertion or Kruskal's MST, DSU is the right tool.
+
+## Strongly Connected Components (SCC) — preview
+
+In a DIRECTED graph, "connected" splits into two notions: weakly connected (treat edges as undirected) and STRONGLY connected (u reaches v AND v reaches u). Strongly connected components are found by Kosaraju's or Tarjan's algorithm — two DFS passes with some bookkeeping. Week 6 territory.
+
+## Common applications
+
+- **Count islands / provinces** — classic.
+- **Largest connected region** — DFS, track max size.
+- **Is graph connected?** — components == 1.
+- **Friend group sizes** — components on a social-network graph.
+- **Word ladders by Hamming distance** — components on a string graph.
+- **2-colouring / bipartite check** — variant of DFS per component (next concept).
+
+## Pure component count vs full classification
+
+If you just need the COUNT, you don't need to remember which vertex belongs to which component — just increment a counter on each DFS launch. If downstream code asks "are u and v in the same component?", you need the compId[] array.
+
+## Complexity
+
+O(V + E) total, regardless of how many components there are. Each vertex is visited once across all DFS launches (since visited[] is shared).`,
+          codeBlocks: [
+            {
+              title: "Count connected components (DFS)",
+              code: `void dfs(int u, vector<vector<int>>& adj, vector<bool>& vis) {
+    vis[u] = true;
+    for (int v : adj[u]) if (!vis[v]) dfs(v, adj, vis);
+}
+
+int countComponents(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    int components = 0;
+    for (int u = 0; u < n; u++) {
+        if (!vis[u]) { dfs(u, adj, vis); components++; }
+    }
+    return components;
+}`
+            },
+            {
+              title: "Same idea with BFS (avoids deep recursion)",
+              code: `void bfs(int src, vector<vector<int>>& adj, vector<bool>& vis) {
+    queue<int> q; q.push(src); vis[src] = true;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : adj[u]) if (!vis[v]) { vis[v] = true; q.push(v); }
+    }
+}
+
+int countComponentsBFS(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    int c = 0;
+    for (int u = 0; u < n; u++) if (!vis[u]) { bfs(u, adj, vis); c++; }
+    return c;
+}`
+            },
+            {
+              title: "Assign a component ID to each vertex",
+              code: `void dfsAssign(int u, int id, vector<vector<int>>& adj, vector<int>& compId) {
+    compId[u] = id;
+    for (int v : adj[u]) if (compId[v] == -1) dfsAssign(v, id, adj, compId);
+}
+
+vector<int> labelComponents(int n, vector<vector<int>>& adj) {
+    vector<int> compId(n, -1);
+    int id = 0;
+    for (int u = 0; u < n; u++) if (compId[u] == -1) { dfsAssign(u, id++, adj, compId); }
+    return compId;
+}`
+            },
+            {
+              title: "Largest connected region in a grid",
+              code: `int dfsArea(vector<vector<int>>& g, int r, int c) {
+    int R = g.size(), C = g[0].size();
+    if (r<0 || r>=R || c<0 || c>=C || g[r][c] != 1) return 0;
+    g[r][c] = 0;                                  // mark visited
+    return 1 + dfsArea(g, r+1, c) + dfsArea(g, r-1, c)
+             + dfsArea(g, r, c+1) + dfsArea(g, r, c-1);
+}
+
+int maxAreaOfIsland(vector<vector<int>>& g) {
+    int best = 0;
+    for (int r = 0; r < (int)g.size(); r++)
+        for (int c = 0; c < (int)g[0].size(); c++)
+            if (g[r][c] == 1) best = max(best, dfsArea(g, r, c));
+    return best;
+}`
+            },
+            {
+              title: "Number of Provinces (adjacency matrix input)",
+              code: `int findCircleNum(vector<vector<int>>& isConnected) {
+    int n = isConnected.size();
+    vector<bool> vis(n, false);
+    int comps = 0;
+    function<void(int)> dfs = [&](int u) {
+        vis[u] = true;
+        for (int v = 0; v < n; v++)
+            if (isConnected[u][v] && !vis[v]) dfs(v);
+    };
+    for (int u = 0; u < n; u++) if (!vis[u]) { dfs(u); comps++; }
+    return comps;
+}`
+            },
+            {
+              title: "Iterative version (avoids stack-overflow risk)",
+              code: `int countComponentsIter(int n, vector<vector<int>>& adj) {
+    vector<bool> vis(n, false);
+    int comps = 0;
+    for (int s = 0; s < n; s++) {
+        if (vis[s]) continue;
+        comps++;
+        stack<int> st; st.push(s);
+        while (!st.empty()) {
+            int u = st.top(); st.pop();
+            if (vis[u]) continue;
+            vis[u] = true;
+            for (int v : adj[u]) if (!vis[v]) st.push(v);
+        }
+    }
+    return comps;
+}`
+            }
+          ],
+          complexity: { time: "O(V + E) — each vertex/edge processed once across all components", space: "O(V) for visited + O(V) recursion (DFS) or queue (BFS)" },
+          keyPoints: [
+            "A connected component = maximal set of mutually reachable vertices (undirected graph).",
+            "Standard loop: for each vertex, if unvisited, launch DFS/BFS and increment a counter.",
+            "Same visited[] array is shared across all launches — total work is O(V + E).",
+            "Per-component statistics (size, sum, max) drop out of the same DFS by accumulating during the recursion.",
+            "Grid 'island' problems are connected components on an implicit graph.",
+            "Component COUNT = number of DFS launches. Component LABEL = pass an ID into DFS.",
+            "DSU is an alternative for dynamic (edge-by-edge) component tracking — covered in Week 6.",
+            "Directed graphs use SCC instead — different algorithms (Kosaraju, Tarjan)."
+          ],
+          pitfalls: [
+            "Forgetting to launch DFS from every vertex — only the source's component is counted.",
+            "Sharing visited[] across CALLS to countComponents (e.g. multiple test cases) — pre-existing state leaks.",
+            "Counting BOTH directions of an undirected edge as two — your graph has the right edges, but the iteration is OK; only matters for edge counting.",
+            "Treating SCC like connected components on a directed graph — different algorithm.",
+            "Off-by-one when initialising compId to 0 vs -1 — pick a sentinel that can't be a valid ID.",
+            "Recursive DFS overflowing the stack on a 10⁶-vertex chain — use iterative or BFS."
+          ],
+          videoId: "GmZNp9_-imM",
           videoSearch: "connected components graph"
         },
         {
           name: "Bipartite Check",
-          explanation: "Detailed notes coming soon. A graph is bipartite iff it can be 2-colored. Check via BFS while alternating colors and looking for conflicts.",
+          explanation: `A graph is BIPARTITE if its vertices can be split into two disjoint sets A and B such that every edge has one endpoint in A and one in B — equivalently, the graph can be 2-COLOURED (paint every vertex with one of two colours so that no edge has both endpoints the same colour).
+
+Bipartite graphs are surprisingly common: any graph representing two distinct kinds of entities (students/courses, jobs/applicants, men/women in matching), any tree, and many planar graphs. There's a famous theorem: a graph is bipartite IFF it has no ODD-LENGTH cycle. That's the structural insight behind the algorithm.
+
+## The algorithm — BFS 2-colouring
+
+Pick any uncoloured vertex; colour it 0; BFS, alternating colours level by level. If you ever try to colour a vertex with the OPPOSITE colour to one it already has, the graph is not bipartite.
+
+vector<int> color(n, -1);                          // -1 = uncoloured
+for (int s = 0; s < n; s++) {
+    if (color[s] != -1) continue;
+    color[s] = 0;
+    queue<int> q; q.push(s);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : adj[u]) {
+            if (color[v] == -1) {
+                color[v] = 1 - color[u];
+                q.push(v);
+            } else if (color[v] == color[u]) {
+                return false;                       // conflict → odd cycle exists
+            }
+        }
+    }
+}
+return true;
+
+O(V + E). The outer loop handles disconnected graphs — every component is checked independently.
+
+## DFS variant
+
+DFS works equally well; same idea, recursion instead of queue.
+
+bool dfs(int u, int c, vector<vector<int>>& adj, vector<int>& color) {
+    color[u] = c;
+    for (int v : adj[u]) {
+        if (color[v] == -1) {
+            if (!dfs(v, 1 - c, adj, color)) return false;
+        } else if (color[v] == c) return false;
+    }
+    return true;
+}
+
+bool isBipartite(int n, vector<vector<int>>& adj) {
+    vector<int> color(n, -1);
+    for (int s = 0; s < n; s++)
+        if (color[s] == -1 && !dfs(s, 0, adj, color)) return false;
+    return true;
+}
+
+## Why odd cycles break bipartiteness
+
+In an odd cycle (length 3, 5, 7, ...), if you alternate colours around the cycle, the last vertex ends up with the SAME colour as the first one it borders → conflict. Even cycles are fine — they alternate cleanly back to the start. So bipartite ⟺ no odd cycles.
+
+## Disconnected graphs
+
+The outer for (int s = 0; s < n; s++) loop is essential. Without it, you only check the source's component. A counter-example without it: a graph with two components, both bipartite individually, returns "false" because you never check the second one... actually you'd return "true" since the second component isn't visited. Either way, you'd miss bugs. ALWAYS loop over all vertices.
+
+## Variant — return the two parts
+
+Once you have the colour array, partitioning is trivial:
+
+vector<int> partA, partB;
+for (int u = 0; u < n; u++) {
+    if (color[u] == 0) partA.push_back(u);
+    else if (color[u] == 1) partB.push_back(u);
+}
+
+## When the graph is directed
+
+Bipartiteness is usually defined for UNDIRECTED graphs. For a directed graph you can ignore directions and check the undirected version, OR you can use stricter definitions depending on the problem domain.
+
+## Common problems
+
+- **Is Graph Bipartite?** — direct.
+- **Possible Bipartition** — model dislikes as edges; check if you can split.
+- **Bipartite matching** (König's theorem) — uses bipartite structure to find maximum matching.
+- **Graph 2-colouring** — same problem under a different name.
+- **Detect odd cycle** — bipartite ⟺ no odd cycle; an odd cycle proves non-bipartite.
+
+## When bipartite-ness matters
+
+Beyond the direct yes/no question, knowing a graph is bipartite unlocks:
+- **Maximum matching** via Hopcroft-Karp or Hungarian algorithm in polynomial time.
+- **Minimum vertex cover** = maximum matching (König's theorem).
+- **Maximum independent set** = n - max matching (complement of vertex cover).
+
+For interview-scale problems, bipartite-check is usually the destination, not the launching pad.`,
+          codeBlocks: [
+            {
+              title: "Bipartite check via BFS 2-colouring",
+              code: `bool isBipartite(int n, vector<vector<int>>& adj) {
+    vector<int> color(n, -1);
+    for (int s = 0; s < n; s++) {
+        if (color[s] != -1) continue;
+        color[s] = 0;
+        queue<int> q; q.push(s);
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int v : adj[u]) {
+                if (color[v] == -1) {
+                    color[v] = 1 - color[u];
+                    q.push(v);
+                } else if (color[v] == color[u]) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}`
+            },
+            {
+              title: "DFS variant",
+              code: `bool dfsBi(int u, int c, vector<vector<int>>& adj, vector<int>& color) {
+    color[u] = c;
+    for (int v : adj[u]) {
+        if (color[v] == -1) {
+            if (!dfsBi(v, 1 - c, adj, color)) return false;
+        } else if (color[v] == c) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool isBipartiteDFS(int n, vector<vector<int>>& adj) {
+    vector<int> color(n, -1);
+    for (int s = 0; s < n; s++)
+        if (color[s] == -1 && !dfsBi(s, 0, adj, color)) return false;
+    return true;
+}`
+            },
+            {
+              title: "Return the two partitions",
+              code: `pair<vector<int>, vector<int>> bipartition(int n, vector<vector<int>>& adj) {
+    vector<int> color(n, -1);
+    for (int s = 0; s < n; s++) {
+        if (color[s] != -1) continue;
+        color[s] = 0;
+        queue<int> q; q.push(s);
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int v : adj[u]) {
+                if (color[v] == -1) { color[v] = 1 - color[u]; q.push(v); }
+                else if (color[v] == color[u]) return {{}, {}};
+            }
+        }
+    }
+    vector<int> A, B;
+    for (int u = 0; u < n; u++) (color[u] == 0 ? A : B).push_back(u);
+    return {A, B};
+}`
+            },
+            {
+              title: "Possible Bipartition — dislikes as edges",
+              code: `bool possibleBipartition(int n, vector<vector<int>>& dislikes) {
+    vector<vector<int>> adj(n + 1);
+    for (auto& e : dislikes) {
+        adj[e[0]].push_back(e[1]);
+        adj[e[1]].push_back(e[0]);
+    }
+    return isBipartite(n + 1, adj);
+}`
+            },
+            {
+              title: "Detect a node where bipartite-ness breaks",
+              code: `// Returns -1 if bipartite, else returns an offending vertex (for debugging).
+int firstConflict(int n, vector<vector<int>>& adj) {
+    vector<int> color(n, -1);
+    for (int s = 0; s < n; s++) {
+        if (color[s] != -1) continue;
+        color[s] = 0;
+        queue<int> q; q.push(s);
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int v : adj[u]) {
+                if (color[v] == -1) { color[v] = 1 - color[u]; q.push(v); }
+                else if (color[v] == color[u]) return v;
+            }
+        }
+    }
+    return -1;
+}`
+            },
+            {
+              title: "Bipartite check on an adjacency matrix (small dense graphs)",
+              code: `bool isBipartiteMat(int n, vector<vector<int>>& mat) {
+    vector<int> color(n, -1);
+    for (int s = 0; s < n; s++) {
+        if (color[s] != -1) continue;
+        color[s] = 0;
+        queue<int> q; q.push(s);
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int v = 0; v < n; v++) {
+                if (!mat[u][v]) continue;
+                if (color[v] == -1) { color[v] = 1 - color[u]; q.push(v); }
+                else if (color[v] == color[u]) return false;
+            }
+        }
+    }
+    return true;
+}`
+            }
+          ],
+          complexity: { time: "O(V + E)", space: "O(V) for the colour array + O(V) BFS queue / DFS stack" },
+          keyPoints: [
+            "Bipartite = vertices split into two sets, every edge crosses between them. Equivalent: 2-colourable.",
+            "BFS 2-colouring: source gets colour 0; neighbours alternate. Conflict = not bipartite.",
+            "DFS variant works identically — pick whichever fits the surrounding code.",
+            "A graph is bipartite IFF it has no ODD-LENGTH cycle.",
+            "Run from EVERY uncoloured vertex — handles disconnected graphs.",
+            "Once 2-coloured, the partitions are just the colour-0 and colour-1 vertex sets.",
+            "Bipartite-ness unlocks polynomial-time max matching, min vertex cover (König), max independent set.",
+            "Trees are always bipartite (no cycles at all)."
+          ],
+          pitfalls: [
+            "Forgetting the 'for every vertex' outer loop — disconnected components go unchecked.",
+            "Colouring with -1 vs 0 vs 1 inconsistently — pick one sentinel for 'uncoloured' and stick to it.",
+            "Mistaking 'visited' for 'coloured' — colour replaces visited entirely.",
+            "Bipartite check on a directed graph without converting to undirected first — wrong by definition.",
+            "Returning true after only checking one component — must verify ALL components are bipartite.",
+            "Self-loops break bipartite-ness (a vertex would need to differ from itself) — handle or rule out in input."
+          ],
           videoId: "orl8SsQOToc",
           videoSearch: "bipartite graph check"
         }
