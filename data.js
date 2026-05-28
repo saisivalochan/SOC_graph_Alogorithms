@@ -1886,46 +1886,55 @@ n = n & (n - 1);
         {
           name: "STL Overview & Vectors",
           explanation: "Detailed notes coming soon. The Standard Template Library gives you battle-tested containers, iterators, and algorithms. Vectors are the dynamic-array workhorse.",
+          videoId: "NWg38xWYzEg",
           videoSearch: "stl vectors c++"
         },
         {
           name: "Sets (set, unordered_set, multiset)",
           explanation: "Detailed notes coming soon. Sets hold unique sorted (set) or hashed (unordered_set) elements. multiset allows duplicates.",
+          videoId: "okhdtEk1iKk",
           videoSearch: "set unordered_set c++"
         },
         {
           name: "Maps (map, unordered_map)",
           explanation: "Detailed notes coming soon. Maps store key→value pairs. map keeps keys sorted (Red-Black tree); unordered_map uses hashing for O(1) average access.",
+          videoId: "okhdtEk1iKk",
           videoSearch: "map unordered_map c++"
         },
         {
           name: "Sorting Basics & std::sort",
           explanation: "Detailed notes coming soon. Bubble, selection, and insertion sort cover the O(n²) basics. std::sort is the O(n log n) industrial-strength choice with optional custom comparators.",
+          videoId: "1jCFUv-Xlqo",
           videoSearch: "sorting algorithms std sort"
         },
         {
           name: "Merge Sort & Quick Sort",
           explanation: "Detailed notes coming soon. Two divide-and-conquer sorts. Merge sort is stable, O(n log n) always, but uses O(n) memory. Quick sort is in-place and faster on average but O(n²) worst case.",
+          videoId: "cQDtOBTy7_Y",
           videoSearch: "merge sort quick sort"
         },
         {
           name: "Binary Search & Binary Search on Answer",
           explanation: "Detailed notes coming soon. The O(log n) classic, plus the meta-trick of binary-searching the answer when the predicate is monotonic.",
+          videoId: "TbbSJrY5GqQ",
           videoSearch: "binary search"
         },
         {
           name: "Recursion Fundamentals",
           explanation: "Detailed notes coming soon. Base case + recursive case. Visualize with a recursion tree. Recursion depth = call-stack space.",
+          videoId: "9OsMG4fI4OY",
           videoSearch: "recursion basics"
         },
         {
           name: "Backtracking (Subsets, Permutations, N-Queens)",
           explanation: "Detailed notes coming soon. Build candidate solutions step by step, undoing (backtracking) when a branch fails. The template covers subsets, permutations, combinations, and constraint-based problems.",
+          videoId: "pNzljlzDCiI",
           videoSearch: "backtracking subsets permutations"
         },
         {
           name: "Memoization Intro",
           explanation: "Detailed notes coming soon. Cache the result of each subproblem the first time you solve it — turns many exponential recursions into polynomial.",
+          videoId: "sPeKpctCL-c",
           videoSearch: "memoization dp introduction"
         }
       ],
@@ -1981,36 +1990,43 @@ n = n & (n - 1);
         {
           name: "Singly & Doubly Linked Lists",
           explanation: "Detailed notes coming soon. A chain of nodes connected by next (and prev) pointers. Insertion at head is O(1); search is O(n).",
+          videoId: "Crqgl10aIGQ",
           videoSearch: "linked list singly doubly"
         },
         {
           name: "Floyd's Cycle Detection & LL Reversal",
           explanation: "Detailed notes coming soon. Two-pointer (slow/fast) tricks for finding cycles, middles, and reversing a list in O(n) time and O(1) space.",
+          videoId: "Fj1ywT9ETQk",
           videoSearch: "floyd cycle detection linked list reversal"
         },
         {
           name: "Stack (LIFO, implementations)",
           explanation: "Detailed notes coming soon. Last-In-First-Out. Built via array or linked list. Used for balanced brackets, expression evaluation, undo systems, and DFS.",
+          videoId: "JvuaAgDar1c",
           videoSearch: "stack data structure c++"
         },
         {
           name: "Queue & Deque",
           explanation: "Detailed notes coming soon. FIFO with enqueue/dequeue, plus the double-ended deque for O(1) ops on either end. Used for BFS and scheduling.",
+          videoId: "fbonDkYsKj0",
           videoSearch: "queue deque c++"
         },
         {
           name: "Monotonic Stack/Queue + Expression Evaluation",
           explanation: "Detailed notes coming soon. Keep the stack/queue in monotonic (sorted) order for next-greater-element and sliding-window-maximum in O(n). Plus infix→postfix conversion and evaluation.",
+          videoId: "5B6jw4wOJR0",
           videoSearch: "monotonic stack expression evaluation"
         },
         {
           name: "Hashing Fundamentals (hash functions, collisions)",
           explanation: "Detailed notes coming soon. What is a hash function? Why does hashing give O(1) average lookup? Collision handling: chaining vs open addressing, and when each degrades to O(n).",
+          videoId: "0kfM_YEzR94",
           videoSearch: "hashing hash table collisions"
         },
         {
           name: "Frequency Counting & Lookup Patterns",
           explanation: "Detailed notes coming soon. The everyday use of hash maps and hash sets — counting occurrences, deduplication, lookup-in-loop, and turning O(n²) brute force into O(n).",
+          videoId: "2yCsrWvHcKQ",
           videoSearch: "frequency counting hashmap"
         }
       ],
@@ -2058,46 +2074,55 @@ n = n & (n - 1);
         {
           name: "Binary Tree Fundamentals",
           explanation: "Detailed notes coming soon. Tree terminology: root, leaf, parent, child, depth, height. Difference between general trees and binary trees.",
+          videoId: "_jKa4gycZTw",
           videoSearch: "binary tree introduction"
         },
         {
           name: "Tree Traversals (Inorder, Preorder, Postorder)",
           explanation: "Detailed notes coming soon. Three depth-first orderings. Inorder of a BST is sorted. Each has a recursive and iterative version.",
+          videoId: "67zlUtAr2LE",
           videoSearch: "tree traversal inorder preorder postorder"
         },
         {
           name: "Level Order Traversal (BFS on tree)",
           explanation: "Detailed notes coming soon. Walk a tree level by level using a queue. Many tree problems (right view, zig-zag, average per level) reduce to a level-order walk with a twist.",
+          videoId: "vQIiUWofWw8",
           videoSearch: "level order traversal bfs tree"
         },
         {
           name: "Tree Properties (depth, height, diameter)",
           explanation: "Detailed notes coming soon. Depth = distance from root. Height = distance to farthest leaf. Diameter = longest path between any two nodes.",
+          videoId: "9fj_-Sr84CU",
           videoSearch: "depth height diameter binary tree"
         },
         {
           name: "Binary Search Tree (BST) — search, insert, delete",
           explanation: "Detailed notes coming soon. Left subtree < node < right subtree. Search/insert/delete in O(log n) average, O(n) worst when the tree degenerates.",
+          videoId: "ScdwdSCnXDU",
           videoSearch: "binary search tree operations"
         },
         {
           name: "Lowest Common Ancestor (LCA)",
           explanation: "Detailed notes coming soon. Deepest node that has both target nodes as descendants. BST has a shortcut; general binary trees use DFS recursion.",
+          videoId: "JW-9nhktGGA",
           videoSearch: "lowest common ancestor binary tree"
         },
         {
           name: "Binary Heap (min-heap & max-heap)",
           explanation: "Detailed notes coming soon. A complete binary tree stored in an array with the heap property. Insert and extract-root in O(log n).",
+          videoId: "MMTQz-G8e-I",
           videoSearch: "binary heap min max heap"
         },
         {
           name: "Priority Queue & Heap Operations",
           explanation: "Detailed notes coming soon. The std::priority_queue interface, heapify, sift-up, sift-down. Used for top-K, scheduling, and Dijkstra.",
+          videoId: "XzA5Ts_vXfw",
           videoSearch: "priority queue c++"
         },
         {
           name: "Trie (Prefix Tree)",
           explanation: "Detailed notes coming soon. A tree where each edge is a character. Insert, search, and startsWith all run in O(L). Used for autocomplete and dictionary problems.",
+          videoId: "dOXfffhl4uI",
           videoSearch: "trie data structure"
         }
       ],
@@ -2148,16 +2173,19 @@ n = n & (n - 1);
         {
           name: "Graph Representations (adj list, matrix, edge list)",
           explanation: "Detailed notes coming soon. Three ways to encode a graph: adjacency list (O(V+E) space), adjacency matrix (O(V²)), and edge list. Each suits different algorithms.",
+          videoId: "3pr9Ce9vECc",
           videoSearch: "graph representation adjacency list matrix"
         },
         {
           name: "Breadth-First Search (BFS)",
           explanation: "Detailed notes coming soon. Explore level by level using a queue. On unweighted graphs BFS finds the shortest path. Multi-source BFS handles 'flood' problems.",
+          videoId: "geOBaNYYInc",
           videoSearch: "bfs breadth first search graph"
         },
         {
           name: "Depth-First Search (DFS)",
           explanation: "Detailed notes coming soon. Explore as deep as possible before backtracking. Recursive or iterative-stack. Foundation for cycle detection, topo sort, and components.",
+          videoId: "GmZNp9_-imM",
           videoSearch: "dfs depth first search graph"
         },
         {
@@ -2168,6 +2196,7 @@ n = n & (n - 1);
         {
           name: "Bipartite Check",
           explanation: "Detailed notes coming soon. A graph is bipartite iff it can be 2-colored. Check via BFS while alternating colors and looking for conflicts.",
+          videoId: "orl8SsQOToc",
           videoSearch: "bipartite graph check"
         }
       ],
@@ -2213,31 +2242,37 @@ n = n & (n - 1);
         {
           name: "Cycle Detection (directed & undirected)",
           explanation: "Detailed notes coming soon. Undirected: a non-parent visited neighbour means a cycle. Directed: a back-edge to a gray (in-progress) vertex means a cycle.",
+          videoId: "hGscdp38JKM",
           videoSearch: "cycle detection graph"
         },
         {
           name: "Topological Sort (Kahn's + DFS)",
           explanation: "Detailed notes coming soon. An ordering of a DAG's vertices so that every edge u→v has u before v. Kahn's uses indegree+queue; DFS variant uses finish-time.",
+          videoId: "Yh5o_PSK9to",
           videoSearch: "topological sort kahn algorithm"
         },
         {
           name: "Dijkstra's Shortest Path",
           explanation: "Detailed notes coming soon. Single-source shortest paths in O((V+E) log V) using a min-heap. Requires non-negative edge weights.",
+          videoId: "SnZ2SQARTVI",
           videoSearch: "dijkstra shortest path"
         },
         {
           name: "Bellman-Ford",
           explanation: "Detailed notes coming soon. Single-source shortest paths in O(V·E), handles negative weights, detects negative-weight cycles.",
+          videoId: "LKfIjVZ6kg4",
           videoSearch: "bellman ford shortest path"
         },
         {
           name: "DSU (Union-Find) with path compression",
           explanation: "Detailed notes coming soon. Track 'which group am I in?' for n elements. Two operations (find, union) in nearly O(1) amortized with path compression + union by rank.",
+          videoId: "YZ40AZQi0bk",
           videoSearch: "union find disjoint set union"
         },
         {
           name: "MST — Kruskal & Prim",
           explanation: "Detailed notes coming soon. Find the minimum-weight tree connecting all vertices. Kruskal sorts edges and uses DSU; Prim grows the tree with a min-heap.",
+          videoId: "J7nUacHWtsM",
           videoSearch: "minimum spanning tree kruskal prim"
         }
       ],
@@ -2283,11 +2318,13 @@ n = n & (n - 1);
         {
           name: "DP Intro: Recursion → Memoization → Tabulation",
           explanation: "Detailed notes coming soon. Every DP solution starts as a recursion. Add caching → memoization. Convert to a loop → tabulation. We explore the ladder in detail.",
+          videoId: "sPeKpctCL-c",
           videoSearch: "dynamic programming introduction memoization tabulation"
         },
         {
           name: "1-D DP (Fibonacci, Climbing Stairs, House Robber)",
           explanation: "Detailed notes coming soon. When the state is one integer (an index), the DP array is 1-D. Classic recurrences: dp[i] depends on dp[i-1] and dp[i-2].",
+          videoId: "0zvG6bIZ5KY",
           videoSearch: "1d dynamic programming house robber"
         },
         {
@@ -2298,21 +2335,25 @@ n = n & (n - 1);
         {
           name: "0/1 Knapsack",
           explanation: "Detailed notes coming soon. Items have weights and values; capacity is W. Each item used at most once. The canonical DP problem — pattern recurs everywhere.",
+          videoId: "PPcpC5QbMx0",
           videoSearch: "0 1 knapsack dynamic programming"
         },
         {
           name: "Unbounded Knapsack",
           explanation: "Detailed notes coming soon. Same setup as 0/1 but each item can be picked any number of times. Subtle change to the recurrence and the loop direction.",
+          videoId: "CB8w6MzXsx4",
           videoSearch: "unbounded knapsack dynamic programming"
         },
         {
           name: "Longest Common Subsequence (LCS family)",
           explanation: "Detailed notes coming soon. Given two strings, find the longest subsequence in both. The pattern generalizes to shortest-common-supersequence, distinct-subsequences, and edit distance.",
+          videoId: "Esx-TxF5PSo",
           videoSearch: "longest common subsequence dp"
         },
         {
           name: "Longest Increasing Subsequence (LIS)",
           explanation: "Detailed notes coming soon. Find the longest strictly increasing subsequence. The O(n²) DP is intuitive; the O(n log n) version uses binary search on a 'tails' array.",
+          videoId: "okgM58Tv9jQ",
           videoSearch: "longest increasing subsequence dp"
         },
         {
@@ -2323,11 +2364,13 @@ n = n & (n - 1);
         {
           name: "DP on Intervals (Palindrome Partitioning, MCM)",
           explanation: "Detailed notes coming soon. dp[i][j] = answer for the interval [i..j]. Fill by increasing interval length. Used in palindrome partitioning and matrix-chain multiplication.",
+          videoId: "-g_xhI_tZfA",
           videoSearch: "dp on intervals palindrome partitioning"
         },
         {
           name: "Greedy vs DP",
           explanation: "Detailed notes coming soon. Greedy = locally best at each step. Works only with proof (exchange argument). When greedy fails, DP saves you. Classic comparison: coin change.",
+          videoId: "bDPtZO_Skyc",
           videoSearch: "greedy algorithm vs dynamic programming"
         }
       ],
