@@ -1887,55 +1887,1443 @@ n = n & (n - 1);
       concepts: [
         {
           name: "STL Overview & Vectors",
-          explanation: "Detailed notes coming soon. The Standard Template Library gives you battle-tested containers, iterators, and algorithms. Vectors are the dynamic-array workhorse.",
+          explanation: `The Standard Template Library (STL) is the part of C++ that gives you ready-made containers (vector, set, map, ...), iterators that traverse them, and algorithms (sort, find, accumulate, ...) that work on any container through those iterators. Together they save you from writing the same data structures by hand every time, and they are blisteringly fast because they're heavily templated and inlined by the compiler.
+
+For DSA work you don't need to memorise every container — you need to know which container to reach for, the rough cost of each operation, and the half-dozen algorithms you'll call constantly. Vector comes first because it replaces C-style arrays in almost every situation.
+
+## The three pillars
+
+Containers hold data. They split into sequence containers (vector, deque, list — order matters), associative containers (set, map — sorted, log-time), and unordered containers (unordered_set, unordered_map — hashed, average O(1)).
+
+Iterators are pointer-like objects that walk a container. v.begin() returns an iterator to the first element; v.end() returns one PAST the last. Most STL algorithms take a [first, last) pair.
+
+Algorithms (sort, find, count, reverse, accumulate, lower_bound, ...) live in <algorithm> and <numeric>. They never know about the container type — they only see iterators, which is why std::sort works on a vector, a deque, or a raw array all the same.
+
+## Vector — the dynamic array
+
+A vector<T> is a contiguous block of memory holding T elements, exactly like a C array, except it can grow. When you push past its current capacity, it allocates a bigger block (typically 2× the current), copies everything over, and frees the old. That occasional copy is what makes a single push_back O(n) worst case but O(1) AMORTISED across many pushes.
+
+Random access is O(1) because elements are contiguous: v[i] is just *(v.data() + i).
+
+## Declaring and initialising
+
+vector<int> v;                    empty
+vector<int> v(10);                10 zeros
+vector<int> v(10, 5);             10 copies of 5
+vector<int> v{1, 2, 3};           three elements: 1, 2, 3
+vector<int> v = {1, 2, 3};        same
+vector<vector<int>> g(3, vector<int>(4, 0));   3×4 grid of zeros
+
+## Size vs capacity
+
+v.size() — how many elements are currently in the vector.
+v.capacity() — how many it can hold before the next reallocation.
+v.reserve(n) — pre-allocate space for n elements (no copy when you later push up to n). Use this when you know the upper bound ahead of time; it eliminates the resize copies entirely.
+
+## Operations cheat sheet
+
+push_back(x) / pop_back()           O(1) amortised / O(1)
+emplace_back(args...)               construct in place — slightly faster than push_back of a temporary
+front() / back()                    O(1)
+insert(it, x) / erase(it)           O(n) — everything after the position shifts
+clear()                             O(n) — destruct every element
+size() / empty()                    O(1)
+data()                              raw pointer to the storage; works with C APIs
+
+## Iterating
+
+Three ways, all equivalent:
+
+for (int i = 0; i < (int)v.size(); i++) cout << v[i];
+for (auto it = v.begin(); it != v.end(); ++it) cout << *it;
+for (int x : v) cout << x;        // modern range-for, preferred
+
+Add & for in-place modification: for (auto& x : v) x *= 2;
+
+## Passing to functions
+
+Always pass big vectors by const reference: const vector<int>& v. No copy, can't be mutated. Pass by reference (vector<int>& v) when the function should modify. Pass by value (vector<int> v) only when you genuinely want an independent copy.
+
+## When NOT to use vector
+
+If you need fast insertion/deletion in the MIDDLE → std::list (linked list, but cache-unfriendly).
+If you need fast pushes on BOTH ends → std::deque.
+If size is known at compile time AND tiny → std::array<T, N>.
+If you need an actual mathematical set or map → set, map, unordered_set, unordered_map (next two lessons).`,
+          codeBlocks: [
+            {
+              title: "Declaring and basic access",
+              code: `#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    vector<int> v = {3, 1, 4, 1, 5, 9, 2, 6};
+
+    cout << v.size()  << "\\n";   // 8
+    cout << v.front() << "\\n";   // 3
+    cout << v.back()  << "\\n";   // 6
+    cout << v[3]      << "\\n";   // 1  (random access O(1))
+}`
+            },
+            {
+              title: "push_back, pop_back, and emplace_back",
+              code: `vector<int> v;
+v.push_back(10);                      // O(1) amortised
+v.push_back(20);
+v.emplace_back(30);                   // constructs in place
+v.pop_back();                         // removes 30
+cout << v.size() << "\\n";             // 2`
+            },
+            {
+              title: "Iterating in three styles",
+              code: `vector<int> v = {1, 2, 3, 4, 5};
+
+// 1) index
+for (int i = 0; i < (int)v.size(); i++) cout << v[i] << " ";
+cout << "\\n";
+
+// 2) iterator
+for (auto it = v.begin(); it != v.end(); ++it) cout << *it << " ";
+cout << "\\n";
+
+// 3) range-for (modern, preferred)
+for (int x : v) cout << x << " ";`
+            },
+            {
+              title: "2-D vector (grid) initialised to zero",
+              code: `int rows = 3, cols = 4;
+vector<vector<int>> grid(rows, vector<int>(cols, 0));
+
+for (int r = 0; r < rows; r++)
+    for (int c = 0; c < cols; c++)
+        grid[r][c] = r * cols + c;`
+            },
+            {
+              title: "reserve() to avoid resize-copies",
+              code: `vector<int> v;
+v.reserve(1'000'000);                 // one allocation up front
+for (int i = 0; i < 1'000'000; i++)
+    v.push_back(i);                   // no reallocations now`
+            },
+            {
+              title: "Pass by const reference for read-only work",
+              code: `int sum(const vector<int>& v) {     // no copy
+    int s = 0;
+    for (int x : v) s += x;
+    return s;
+}`
+            }
+          ],
+          complexity: { time: "Access O(1); push_back O(1) amortised; insert/erase in middle O(n)", space: "O(n)" },
+          keyPoints: [
+            "STL = containers + iterators + algorithms. Algorithms work on any container via iterators.",
+            "vector<T> is a contiguous, dynamically-growing array — the everyday replacement for C arrays.",
+            "Random access v[i] is O(1); push_back/pop_back at the end are O(1) amortised.",
+            "Insert or erase in the MIDDLE of a vector is O(n) because elements shift.",
+            "size() is the element count; capacity() is the allocated room. reserve(n) pre-allocates.",
+            "Range-for (for (auto x : v)) is the modern, safe way to iterate. Add & to modify in place.",
+            "Pass big vectors by const reference (const vector<int>& v) — no copy, no mutation.",
+            "vector<vector<int>> mat(R, vector<int>(C, 0)) creates an R×C grid initialised to 0."
+          ],
+          pitfalls: [
+            "vector<int> v(n) creates n zeros; vector<int> v{n} creates a single element n — the braces matter.",
+            "v[i] does NOT bounds-check. v.at(i) does and throws std::out_of_range if i is invalid.",
+            "Any push_back/insert/erase can invalidate ALL existing iterators and references — don't hold them across mutations.",
+            "Forgetting reserve when you know the size — every doubling reallocation costs O(n).",
+            "Returning a vector by value used to be slow; with move-semantics (C++11+) it's free, so don't fight it with new/delete.",
+            "Mixing signed loop counter (int i) with unsigned v.size() triggers compiler warnings — cast or use size_t."
+          ],
           videoId: "NWg38xWYzEg",
           videoSearch: "stl vectors c++"
         },
         {
           name: "Sets (set, unordered_set, multiset)",
-          explanation: "Detailed notes coming soon. Sets hold unique sorted (set) or hashed (unordered_set) elements. multiset allows duplicates.",
+          explanation: `A set is a collection that stores unique values and lets you ask "is x in here?" much faster than scanning an array. C++ ships three flavours: the ordered set, the hashed unordered_set, and the multiset that allows duplicates. Choosing the right one is mostly about whether you need elements sorted and whether your keys are hashable.
+
+## std::set — ordered, log-time
+
+set<T> is a balanced binary search tree (Red-Black tree in every major implementation). Every operation is O(log n) — insert, erase, count, find. The killer feature is that elements stay SORTED, so iterating from begin() to end() gives them in order, and you can ask for the smallest/largest in O(log n).
+
+set<int> s = {3, 1, 4, 1, 5};   // duplicates dropped, stored as {1, 3, 4, 5}
+s.insert(2);                     // s == {1, 2, 3, 4, 5}
+s.erase(3);                      // s == {1, 2, 4, 5}
+if (s.count(4)) { ... }          // 0 or 1 (never more for a set)
+auto it = s.find(2);             // iterator or s.end()
+*s.begin()                       // smallest
+*s.rbegin()                      // largest
+
+The order matters: lower_bound(x) returns an iterator to the first element ≥ x, upper_bound(x) the first strictly > x. These two are how you do floor/ceiling queries.
+
+## std::unordered_set — hashed, average O(1)
+
+unordered_set<T> uses a hash table. find/insert/erase are O(1) AVERAGE — but O(n) worst case if many keys collide. Iteration order is undefined (it's the order of the internal buckets, which can change with each insert).
+
+unordered_set<int> u = {5, 2, 8};
+u.insert(3);
+if (u.count(8)) { ... }
+u.erase(2);
+
+Use unordered_set when you just need fast lookup. Use set when you also need order.
+
+## std::multiset — sorted with duplicates
+
+Same API as set, but the same key can be inserted multiple times. count(x) returns how many copies. erase(x) by value removes ALL copies; erase(it) by iterator removes just one.
+
+multiset<int> ms = {5, 1, 5, 3};   // stored as {1, 3, 5, 5}
+ms.count(5)                         // 2
+ms.erase(ms.find(5));               // removes ONE 5
+
+## Hashing custom types
+
+unordered_set<string> works out of the box because std::hash<string> is defined. For your own struct you need to specialise std::hash or pass a hasher as a template argument. set is easier — it only needs operator< (the default works for primitives).
+
+## Performance picture
+
+| Op       | set         | unordered_set        | multiset    |
+|----------|-------------|----------------------|-------------|
+| insert   | O(log n)    | O(1) avg, O(n) worst | O(log n)    |
+| erase    | O(log n)    | O(1) avg             | O(log n)    |
+| find     | O(log n)    | O(1) avg             | O(log n)    |
+| min/max  | O(log n)    | NOT supported        | O(log n)    |
+| in-order | O(n)        | impossible           | O(n)        |
+
+## When to use which
+
+Use unordered_set when: you need pure set semantics (membership, dedup, fast lookup) and order does not matter. This is the default 90% of the time in DSA.
+Use set when: you also need "smallest", "largest", "first element ≥ x", or you need to iterate in sorted order.
+Use multiset when: duplicates are meaningful — e.g. a stream of numbers where you need to count how many are equal to x, or you need a sorted bag.`,
+          codeBlocks: [
+            {
+              title: "set — unique, sorted",
+              code: `#include <iostream>
+#include <set>
+using namespace std;
+
+int main() {
+    set<int> s = {3, 1, 4, 1, 5, 9, 2, 6};
+    s.insert(8);
+    s.erase(4);
+
+    for (int x : s) cout << x << " ";   // 1 2 3 5 6 8 9 (sorted)
+    cout << "\\n";
+    cout << *s.begin()  << "\\n";        // 1 (smallest)
+    cout << *s.rbegin() << "\\n";        // 9 (largest)
+}`
+            },
+            {
+              title: "unordered_set — hashed, fastest lookup",
+              code: `#include <iostream>
+#include <unordered_set>
+using namespace std;
+
+int main() {
+    unordered_set<int> u = {5, 2, 8, 13};
+    u.insert(7);
+    if (u.count(8)) cout << "8 is in u\\n";   // O(1) average
+    u.erase(2);
+    cout << u.size() << "\\n";   // 4
+}`
+            },
+            {
+              title: "multiset — duplicates allowed",
+              code: `#include <iostream>
+#include <set>
+using namespace std;
+
+int main() {
+    multiset<int> ms = {5, 1, 5, 3, 5};
+    cout << ms.count(5) << "\\n";   // 3
+    ms.erase(ms.find(5));            // remove ONE 5
+    cout << ms.count(5) << "\\n";   // 2
+    ms.erase(5);                     // erase ALL remaining 5s
+    cout << ms.count(5) << "\\n";   // 0
+}`
+            },
+            {
+              title: "lower_bound / upper_bound — floor and ceiling",
+              code: `set<int> s = {1, 4, 7, 10, 13};
+auto it = s.lower_bound(7);          // first >= 7 → 7
+auto it2 = s.upper_bound(7);         // first  > 7 → 10
+if (it != s.end()) cout << *it << "\\n";   // 7`
+            },
+            {
+              title: "Deduplicate a vector via set",
+              code: `vector<int> v = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3};
+unordered_set<int> seen(v.begin(), v.end());
+vector<int> uniq(seen.begin(), seen.end());   // order not preserved`
+            },
+            {
+              title: "Count distinct elements in a stream",
+              code: `unordered_set<int> seen;
+int x;
+while (cin >> x) seen.insert(x);
+cout << "distinct = " << seen.size() << "\\n";`
+            }
+          ],
+          complexity: { time: "set/multiset O(log n); unordered_set O(1) average, O(n) worst", space: "O(n)" },
+          keyPoints: [
+            "set is a Red-Black tree: unique elements kept SORTED, every op O(log n).",
+            "unordered_set is a hash table: O(1) average lookup, no order, O(n) worst case on bad hash.",
+            "multiset = set with duplicates allowed. count(x) returns how many; erase(x) removes ALL of them.",
+            "set supports lower_bound/upper_bound for floor/ceiling queries; unordered_set does not.",
+            "*s.begin() is the smallest; *s.rbegin() is the largest — both O(log n) on a set.",
+            "Reach for unordered_set by default; reach for set when you need order or min/max.",
+            "Constructing a set from a vector's iterators is the standard trick to dedup."
+          ],
+          pitfalls: [
+            "Iteration order of unordered_set is undefined and can change after every insert.",
+            "unordered_set<T> for custom T needs you to provide std::hash<T> — set just needs operator<.",
+            "ms.erase(x) removes EVERY occurrence; use ms.erase(ms.find(x)) to remove only one.",
+            "Worst-case unordered_set degenerates to O(n) per operation when many keys hash to the same bucket.",
+            "Comparing two sets with == is O(n) — they're equal iff they contain the same elements.",
+            "Hash collisions can be a security issue (DoS) — competitive coders sometimes use custom hashes to avoid adversarial inputs."
+          ],
           videoId: "okhdtEk1iKk",
           videoSearch: "set unordered_set c++"
         },
         {
           name: "Maps (map, unordered_map)",
-          explanation: "Detailed notes coming soon. Maps store key→value pairs. map keeps keys sorted (Red-Black tree); unordered_map uses hashing for O(1) average access.",
+          explanation: `A map is a set of key→value pairs. You look up by key and get the value. C++ ships two: std::map (sorted by key, O(log n) per op) and std::unordered_map (hashed, O(1) average per op). Maps are the single most useful data structure in interview-style DSA — frequency counts, lookup tables, memoization, graph adjacency lists, last-seen indices, all of it.
+
+## std::map — sorted, log-time
+
+A Red-Black tree of pairs, sorted by key. Every operation is O(log n). Iteration walks keys in order.
+
+map<string, int> m;
+m["alice"] = 90;
+m["bob"]   = 75;
+m["alice"]++;                // 91
+if (m.count("bob")) ...;     // 0 or 1
+m.erase("alice");
+auto it = m.find("bob");     // iterator to {key, value}, or m.end()
+
+## std::unordered_map — hashed, average O(1)
+
+Same interface, hash table instead of tree. Constant-time on average; iteration order is undefined.
+
+unordered_map<string, int> u;
+u["alice"] = 90;
+u["bob"]   = 75;
+if (u.count("alice")) cout << u["alice"];
+
+## The [] operator and its trap
+
+m[k] returns a reference to the value at k. If k doesn't exist, it INSERTS a default-constructed value (0 for int, "" for string) and returns that. This is handy for counting:
+
+map<string, int> cnt;
+for (string w : words) cnt[w]++;     // missing keys start at 0
+
+But it bites when you just want to CHECK presence without inserting. Use count(k) or find(k) for that — they don't mutate.
+
+## Iterating
+
+for (auto& [k, v] : m) cout << k << " -> " << v << "\\n";   // C++17 structured binding
+for (auto& p  : m) cout << p.first << " " << p.second;       // pre-C++17
+
+## insert vs []
+
+m[k] = v always works — overwrites if k exists, inserts otherwise.
+m.insert({k, v}) inserts only if k is NEW; if k exists, the existing value stays.
+m.emplace(k, v) is like insert but constructs in place.
+
+## Common DSA patterns
+
+Frequency table:    map<int,int> freq; for (int x : a) freq[x]++;
+Last-seen index:    unordered_map<int,int> last; last[x] = i;
+Adjacency list:     unordered_map<int, vector<int>> adj; adj[u].push_back(v);
+Memoization cache:  unordered_map<int,int> memo; if (memo.count(n)) return memo[n];
+Group by key:       map<string, vector<string>> groups; groups[key(s)].push_back(s);
+
+## Performance picture
+
+| Op       | map         | unordered_map           |
+|----------|-------------|-------------------------|
+| insert   | O(log n)    | O(1) avg, O(n) worst    |
+| erase    | O(log n)    | O(1) avg                |
+| find     | O(log n)    | O(1) avg                |
+| [] access| O(log n)    | O(1) avg                |
+| min/max  | O(log n)    | NOT supported           |
+| in-order | O(n)        | impossible              |
+
+## When to use which
+
+unordered_map for raw speed and when order doesn't matter — this is the default.
+map when you need keys SORTED, range queries (lower_bound), or smallest/largest key.
+
+## Custom keys
+
+unordered_map<MyStruct, V> needs std::hash<MyStruct>. map<MyStruct, V> only needs operator< (or a custom comparator as the third template arg).`,
+          codeBlocks: [
+            {
+              title: "Frequency counting (the everyday use)",
+              code: `#include <iostream>
+#include <unordered_map>
+#include <vector>
+using namespace std;
+
+int main() {
+    vector<string> words = {"apple", "banana", "apple", "cherry", "banana", "apple"};
+    unordered_map<string, int> freq;
+    for (const string& w : words) freq[w]++;
+
+    for (auto& [w, c] : freq) cout << w << " -> " << c << "\\n";
+}`
+            },
+            {
+              title: "Two Sum — the canonical map problem",
+              code: `// Return indices of the two numbers that add up to target. O(n) with a hash map.
+vector<int> twoSum(vector<int>& nums, int target) {
+    unordered_map<int, int> seen;       // value -> index
+    for (int i = 0; i < (int)nums.size(); i++) {
+        int need = target - nums[i];
+        if (seen.count(need)) return { seen[need], i };
+        seen[nums[i]] = i;
+    }
+    return {};
+}`
+            },
+            {
+              title: "Iterating with structured bindings (C++17)",
+              code: `map<string, int> scores = {{"alice", 90}, {"bob", 75}, {"carol", 88}};
+for (auto& [name, score] : scores)              // sorted by key
+    cout << name << " -> " << score << "\\n";`
+            },
+            {
+              title: "Range query with map's lower_bound",
+              code: `map<int, string> events = {{10,"a"}, {25,"b"}, {40,"c"}, {55,"d"}};
+auto it = events.lower_bound(30);     // first key >= 30 → 40
+if (it != events.end())
+    cout << it->first << " -> " << it->second << "\\n";`
+            },
+            {
+              title: "[] vs count — accidentally inserting keys",
+              code: `unordered_map<string,int> m;
+if (m["maybe"] == 0) { ... }   // BUG: this just inserted "maybe" with value 0!
+
+// Correct: don't mutate while checking
+if (m.count("maybe")) { ... }
+if (m.find("maybe") != m.end()) { ... }`
+            },
+            {
+              title: "Memoized Fibonacci",
+              code: `unordered_map<int, long long> memo;
+long long fib(int n) {
+    if (n < 2) return n;
+    if (memo.count(n)) return memo[n];
+    return memo[n] = fib(n - 1) + fib(n - 2);
+}`
+            }
+          ],
+          complexity: { time: "map O(log n); unordered_map O(1) average, O(n) worst", space: "O(n)" },
+          keyPoints: [
+            "map<K,V> = sorted Red-Black tree. unordered_map<K,V> = hash table.",
+            "Operations: insert / erase / find / []-access — log(n) for map, O(1) average for unordered_map.",
+            "m[k] auto-inserts a default value if k is missing — handy for counting, dangerous for checks.",
+            "Use m.count(k) or m.find(k) when you only want to TEST presence (won't insert).",
+            "Structured bindings (auto& [k, v] : m) is the modern way to iterate (C++17+).",
+            "map keys are sorted — use lower_bound / upper_bound for range queries.",
+            "Frequency tables, last-seen indices, memoization caches, adjacency lists all use unordered_map by default."
+          ],
+          pitfalls: [
+            "if (m[k] == 0) inserts k with value 0 — use count or find for read-only checks.",
+            "unordered_map's iteration order is undefined and changes after insertions.",
+            "unordered_map<CustomKey, V> needs you to provide std::hash<CustomKey>; map<CustomKey, V> only needs operator<.",
+            "Worst-case unordered_map degenerates to O(n) per op on bad hashes — consider a custom hash for adversarial inputs.",
+            "Modifying a map while iterating with iterators invalidates iterators (for erase, use the it = m.erase(it) idiom).",
+            "Storing references to map values across insertions is unsafe — a rehash (unordered_map) or tree rotation (map) can move them."
+          ],
           videoId: "okhdtEk1iKk",
           videoSearch: "map unordered_map c++"
         },
         {
           name: "Sorting Basics & std::sort",
-          explanation: "Detailed notes coming soon. Bubble, selection, and insertion sort cover the O(n²) basics. std::sort is the O(n log n) industrial-strength choice with optional custom comparators.",
+          explanation: `Sorting is the gateway algorithm — half of all DSA tricks become trivial once the input is sorted. You should know three things: the three simple O(n²) sorts (for intuition), the industrial-grade O(n log n) sort that you'll actually use (std::sort), and how to sort by a custom rule with a comparator.
+
+## The three O(n²) basics
+
+**Bubble sort.** Walk the array; swap adjacent pairs that are out of order; repeat until a full pass does no swaps. Easy to write, painfully slow. O(n²) time, O(1) space, STABLE.
+
+**Selection sort.** Walk i from 0 to n-1. For each i, scan i..n-1 to find the minimum and swap it into position i. Always makes exactly n-1 swaps. O(n²) time, O(1) space, NOT stable.
+
+**Insertion sort.** Walk i from 1 to n-1. Take a[i] and slide it left until everything before it is smaller. O(n²) worst case but O(n) on nearly-sorted input — that's why hybrid sorts use it for small subarrays. STABLE, in-place.
+
+None of these are competitive on real inputs. They're worth knowing because they show up in the analysis section of other algorithms and they're great for tiny n.
+
+## std::sort — what you'll actually use
+
+In <algorithm>:
+
+sort(v.begin(), v.end());                    // ascending
+sort(v.begin(), v.end(), greater<int>());    // descending
+sort(v.begin(), v.end(), cmp);               // custom comparator
+
+std::sort is O(n log n) in all real implementations — typically introsort, which starts as quicksort and falls back to heapsort when recursion gets too deep, plus insertion sort for small subranges. It is NOT stable. If you need stability (equal elements keep their relative order), use stable_sort, which is O(n log n) worst case with O(n) extra memory.
+
+## Comparators — the rule that defines the order
+
+A comparator returns true if its first argument should come BEFORE its second. It must be a strict weak ordering: irreflexive (cmp(x,x) is false), antisymmetric, and transitive. Violating that gives undefined behaviour — the runtime can crash or hang.
+
+bool cmp(int a, int b) { return a > b; }     // descending
+sort(v.begin(), v.end(), cmp);
+
+Lambdas are the standard modern form:
+
+sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
+
+For pairs/structs, sort by a field:
+
+sort(people.begin(), people.end(),
+     [](const Person& a, const Person& b) { return a.age < b.age; });
+
+## Sorting in reverse
+
+Three equivalent ways: pass greater<int>() as the comparator, pass a custom lambda return a > b, or sort ascending then reverse(v.begin(), v.end()). All O(n log n).
+
+## Sorting indices instead of values
+
+When you need to remember WHERE each element came from, sort an index array by the values:
+
+vector<int> idx(v.size());
+iota(idx.begin(), idx.end(), 0);             // 0, 1, 2, ...
+sort(idx.begin(), idx.end(), [&](int a, int b) { return v[a] < v[b]; });
+
+## Sorting a 2-D thing (vector of vectors / pairs)
+
+A pair<int,int> is sorted lexicographically by default: by .first first, then .second. For different rules, supply a comparator.
+
+vector<pair<int,int>> intervals = {{3,6}, {1,4}, {2,5}};
+sort(intervals.begin(), intervals.end());    // {{1,4},{2,5},{3,6}}
+
+## When NOT to use std::sort
+
+For sorting strings by a custom locale rule, std::sort with a lambda is fine but slow on huge inputs — consider radix sort. For sorting integers in a known small range, counting sort is O(n + k). For partial sorts (find the top-K elements without sorting the whole array), use std::partial_sort or std::nth_element — both O(n log K) or O(n) respectively, much faster than full sort + slice.`,
+          codeBlocks: [
+            {
+              title: "std::sort — the everyday call",
+              code: `#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+int main() {
+    vector<int> v = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3};
+    sort(v.begin(), v.end());
+    for (int x : v) cout << x << " ";   // 1 1 2 3 3 4 5 5 6 9
+}`
+            },
+            {
+              title: "Descending — three ways",
+              code: `sort(v.begin(), v.end(), greater<int>());
+sort(v.begin(), v.end(), [](int a, int b) { return a > b; });
+sort(v.begin(), v.end());
+reverse(v.begin(), v.end());`
+            },
+            {
+              title: "Custom comparator on a struct",
+              code: `struct Person { string name; int age; };
+vector<Person> p = { {"alice", 30}, {"bob", 25}, {"carol", 28} };
+
+sort(p.begin(), p.end(),
+     [](const Person& a, const Person& b) { return a.age < b.age; });
+
+for (auto& x : p) cout << x.name << " ";   // bob carol alice`
+            },
+            {
+              title: "Insertion sort (for intuition; not for speed)",
+              code: `void insertionSort(vector<int>& a) {
+    for (int i = 1; i < (int)a.size(); i++) {
+        int key = a[i];
+        int j = i - 1;
+        while (j >= 0 && a[j] > key) { a[j + 1] = a[j]; j--; }
+        a[j + 1] = key;
+    }
+}`
+            },
+            {
+              title: "Bubble sort with early-exit on a sorted array",
+              code: `void bubbleSort(vector<int>& a) {
+    int n = a.size();
+    for (int i = 0; i < n - 1; i++) {
+        bool swapped = false;
+        for (int j = 0; j < n - 1 - i; j++) {
+            if (a[j] > a[j + 1]) { swap(a[j], a[j + 1]); swapped = true; }
+        }
+        if (!swapped) break;          // already sorted
+    }
+}`
+            },
+            {
+              title: "Sort indices by value (argsort)",
+              code: `vector<int> v = {30, 10, 20};
+vector<int> idx(v.size());
+iota(idx.begin(), idx.end(), 0);
+sort(idx.begin(), idx.end(),
+     [&](int a, int b) { return v[a] < v[b]; });
+// idx == {1, 2, 0}  (values would be {10, 20, 30})`
+            }
+          ],
+          complexity: { time: "Bubble/Selection/Insertion O(n²); std::sort O(n log n); stable_sort O(n log n)", space: "O(1) in-place; stable_sort needs O(n)", best: "Insertion O(n) on sorted; bubble O(n) with early-exit", average: "std::sort O(n log n)", worst: "std::sort O(n log n) (introsort)" },
+          keyPoints: [
+            "Use std::sort — it's O(n log n), in-place, and uses the best of quicksort+heapsort+insertion sort.",
+            "std::sort is NOT stable. Use stable_sort when equal elements must keep their relative order.",
+            "A comparator returns true when its first arg should come BEFORE its second.",
+            "Pairs sort lexicographically by default: first, then second.",
+            "Sort indices (argsort) when you need to remember where elements came from.",
+            "For top-K only, prefer nth_element (O(n)) or partial_sort (O(n log K)) over a full sort.",
+            "Insertion sort is fast on tiny or nearly-sorted arrays — that's why hybrid sorts use it for small subranges."
+          ],
+          pitfalls: [
+            "Comparator must be a strict weak ordering. cmp(x, x) == true (using <= instead of <) is undefined behaviour.",
+            "Sorting a vector and forgetting to .begin()/.end() — passing the vector directly doesn't compile.",
+            "std::sort being unstable surprises people who relied on insertion order — use stable_sort if you need it.",
+            "Sorting a vector of pointers/references but expecting the OBJECTS to move — the pointers move, not the data.",
+            "Reverse iterators with sort + greater work, but reading the code is harder than a lambda.",
+            "Custom hash/equality types must agree (unordered_*) — but for sort, only the comparator matters; ties may resolve arbitrarily."
+          ],
           videoId: "1jCFUv-Xlqo",
           videoSearch: "sorting algorithms std sort"
         },
         {
           name: "Merge Sort & Quick Sort",
-          explanation: "Detailed notes coming soon. Two divide-and-conquer sorts. Merge sort is stable, O(n log n) always, but uses O(n) memory. Quick sort is in-place and faster on average but O(n²) worst case.",
+          explanation: `Merge sort and quick sort are the two divide-and-conquer sorts every CS student must know cold. Both achieve O(n log n) on average, but they make opposite trade-offs. Merge sort has a guaranteed O(n log n) worst case and is stable, paid for with O(n) extra memory. Quick sort is in-place and usually faster in practice, but its naive form can degrade to O(n²) on already-sorted inputs.
+
+## Divide and conquer — the shared recipe
+
+Both algorithms follow the same outline: split the problem into smaller subproblems, solve each recursively, combine the results. The difference is where the work happens.
+
+In merge sort the SPLIT is trivial (cut the array in half) and the COMBINE is the real work (merge two sorted halves).
+In quick sort the SPLIT is the real work (partition around a pivot) and the COMBINE is trivial (concatenate).
+
+## Merge sort
+
+mergeSort(a, l, r):
+   if l >= r: return
+   mid = (l + r) / 2
+   mergeSort(a, l, mid)
+   mergeSort(a, mid+1, r)
+   merge(a, l, mid, r)        // combine two sorted halves
+
+The merge step walks both halves with two pointers, picking the smaller front element each time. It runs in O(n) and needs O(n) extra space (a temporary buffer). The recursion tree has height log n and does n work per level → O(n log n) total.
+
+Merge sort is STABLE (equal elements keep their order), which matters when sorting records by one field while preserving the order of equal-keyed records.
+
+## Quick sort
+
+quickSort(a, l, r):
+   if l >= r: return
+   p = partition(a, l, r)       // pivot lands at index p
+   quickSort(a, l, p - 1)
+   quickSort(a, p + 1, r)
+
+The partition step: pick a pivot (often a[r] or a random element), rearrange so that everything ≤ pivot is on its left and everything > pivot is on its right, return the pivot's final index. Done in O(n) with one or two pointer passes (Lomuto and Hoare are the two textbook schemes).
+
+Expected runtime is O(n log n) — the recursion tree's average height is log n when the pivot splits the array roughly in half. The worst case is O(n²): if the pivot is always the smallest or largest element (which happens on sorted input with a naive "pick last" pivot), recursion goes n deep and each level does n work.
+
+The fix is randomisation: pick a random pivot. With a random pivot, the chance of degenerate behaviour is negligible. Production sorts (like std::sort = introsort) also fall back to heapsort if the recursion depth gets too large.
+
+## Side-by-side trade-offs
+
+|                       | Merge sort       | Quick sort                |
+|-----------------------|------------------|---------------------------|
+| Average time          | O(n log n)       | O(n log n)                |
+| Worst-case time       | O(n log n)       | O(n²)                     |
+| Space (auxiliary)     | O(n)             | O(log n) recursion        |
+| In-place?             | No               | Yes                       |
+| Stable?               | Yes              | No                        |
+| Cache-friendly?       | Less so          | Yes                       |
+| Real-world speed      | Slower in practice| Faster in practice        |
+
+## Why std::sort uses BOTH
+
+Modern C++'s std::sort is introsort: it starts as randomised quick sort, switches to heapsort if recursion gets too deep, and uses insertion sort on tiny subarrays. That gives you quick sort's average speed with merge/heap sort's worst-case guarantee.
+
+stable_sort uses merge sort because it's stable by nature.
+
+## When to actually pick one by hand
+
+In real code you call std::sort. You'd write merge sort by hand if you need a stable in-place-feeling sort and don't trust std::stable_sort's memory cost, or if you're sorting a linked list (where merge sort is perfect because it doesn't need random access). You'd write quick sort to teach yourself partitioning, which underpins quickselect, the Dutch National Flag, and many other algorithms.`,
+          codeBlocks: [
+            {
+              title: "Merge sort — full implementation",
+              code: `void merge(vector<int>& a, int l, int mid, int r) {
+    vector<int> tmp(r - l + 1);
+    int i = l, j = mid + 1, k = 0;
+    while (i <= mid && j <= r)
+        tmp[k++] = (a[i] <= a[j]) ? a[i++] : a[j++];
+    while (i <= mid) tmp[k++] = a[i++];
+    while (j <= r)   tmp[k++] = a[j++];
+    for (int p = 0; p < (int)tmp.size(); p++) a[l + p] = tmp[p];
+}
+
+void mergeSort(vector<int>& a, int l, int r) {
+    if (l >= r) return;
+    int mid = l + (r - l) / 2;
+    mergeSort(a, l, mid);
+    mergeSort(a, mid + 1, r);
+    merge(a, l, mid, r);
+}`
+            },
+            {
+              title: "Quick sort with Lomuto partition",
+              code: `int partition(vector<int>& a, int l, int r) {
+    int pivot = a[r];                 // pivot is the last element
+    int i = l - 1;
+    for (int j = l; j < r; j++)
+        if (a[j] <= pivot) swap(a[++i], a[j]);
+    swap(a[i + 1], a[r]);
+    return i + 1;
+}
+
+void quickSort(vector<int>& a, int l, int r) {
+    if (l >= r) return;
+    int p = partition(a, l, r);
+    quickSort(a, l, p - 1);
+    quickSort(a, p + 1, r);
+}`
+            },
+            {
+              title: "Quick sort with randomised pivot (avoids O(n²))",
+              code: `#include <random>
+mt19937 rng(42);
+
+int randPartition(vector<int>& a, int l, int r) {
+    int idx = l + rng() % (r - l + 1);
+    swap(a[idx], a[r]);
+    return partition(a, l, r);        // reuse Lomuto from above
+}
+
+void quickSortRand(vector<int>& a, int l, int r) {
+    if (l >= r) return;
+    int p = randPartition(a, l, r);
+    quickSortRand(a, l, p - 1);
+    quickSortRand(a, p + 1, r);
+}`
+            },
+            {
+              title: "Counting inversions with merge sort (bonus pattern)",
+              code: `// Number of pairs (i, j) with i < j and a[i] > a[j] — classic merge sort trick.
+long long merge_cnt(vector<int>& a, int l, int mid, int r) {
+    vector<int> tmp;
+    int i = l, j = mid + 1; long long inv = 0;
+    while (i <= mid && j <= r) {
+        if (a[i] <= a[j]) tmp.push_back(a[i++]);
+        else { tmp.push_back(a[j++]); inv += (mid - i + 1); }
+    }
+    while (i <= mid) tmp.push_back(a[i++]);
+    while (j <= r)   tmp.push_back(a[j++]);
+    for (int p = 0; p < (int)tmp.size(); p++) a[l + p] = tmp[p];
+    return inv;
+}`
+            },
+            {
+              title: "Quickselect — find the k-th smallest in O(n) average",
+              code: `int quickselect(vector<int>& a, int l, int r, int k) {
+    if (l == r) return a[l];
+    int p = partition(a, l, r);          // pivot ends at p
+    if (k == p) return a[p];
+    if (k < p)  return quickselect(a, l, p - 1, k);
+    return quickselect(a, p + 1, r, k);
+}`
+            }
+          ],
+          complexity: { time: "Merge sort O(n log n) always; quick sort O(n log n) average, O(n²) worst", space: "Merge O(n) extra; quick O(log n) recursion (in-place)", best: "Quick O(n log n)", average: "Both O(n log n)", worst: "Merge O(n log n); quick O(n²) without randomisation" },
+          keyPoints: [
+            "Divide and conquer: split the array, recurse on each half, combine.",
+            "Merge sort: trivial split, real work in the merge — O(n log n) always, STABLE, O(n) extra memory.",
+            "Quick sort: real work in the partition — O(n log n) average, O(n²) worst, in-place, NOT stable.",
+            "Randomise the pivot in quick sort to make the O(n²) worst case statistically impossible.",
+            "std::sort (introsort) = quick sort + heapsort fallback + insertion sort on small ranges.",
+            "stable_sort uses merge sort because merge sort is stable by nature.",
+            "The partition step is reusable — quickselect uses it to find the k-th smallest in O(n) average.",
+            "Merge sort is the natural choice for linked lists because it doesn't need random access."
+          ],
+          pitfalls: [
+            "Quick sort with 'pivot = last element' on a sorted array gives O(n²) — always randomise or use median-of-three.",
+            "Off-by-one in merge: forgetting to copy the leftover tail from one of the halves.",
+            "Recursion depth: deep recursion (n = 10⁶) can blow the stack — iterative versions or randomisation help.",
+            "Modifying the array between recursive calls breaks the divide-and-conquer invariant.",
+            "Forgetting that merge sort needs O(n) extra space — on memory-constrained inputs, this matters.",
+            "Confusing average and worst case in interviews — quick sort is O(n log n) AVERAGE but O(n²) worst."
+          ],
           videoId: "cQDtOBTy7_Y",
           videoSearch: "merge sort quick sort"
         },
         {
           name: "Binary Search & Binary Search on Answer",
-          explanation: "Detailed notes coming soon. The O(log n) classic, plus the meta-trick of binary-searching the answer when the predicate is monotonic.",
+          explanation: `Binary search is the single highest-leverage algorithm in DSA. The classic version finds a value in a sorted array in O(log n). The meta-trick — "binary search on the answer" — turns a yes/no predicate into an optimisation answer in O(log range) and shows up in dozens of medium-hard problems.
+
+## Classic binary search
+
+The array is sorted. You're looking for target. Maintain two pointers l and r bracketing the search range. Look at the middle. If a[mid] == target, done. If a[mid] < target, the answer is to the right, so l = mid + 1. Otherwise r = mid - 1.
+
+The textbook trap is integer overflow: writing mid = (l + r) / 2 can overflow when both are near INT_MAX. Always write mid = l + (r - l) / 2.
+
+## Iterative template (the safe one)
+
+while (l <= r) {
+    int mid = l + (r - l) / 2;
+    if (a[mid] == target) return mid;
+    if (a[mid] <  target) l = mid + 1;
+    else                  r = mid - 1;
+}
+return -1;
+
+## Variants — lower_bound, upper_bound
+
+Sometimes you don't want the exact match — you want the first element ≥ target (floor of insertion point), or the first element > target (one past). STL gives you both:
+
+lower_bound(v.begin(), v.end(), x)   // first iterator with *it >= x
+upper_bound(v.begin(), v.end(), x)   // first iterator with *it >  x
+
+(upper_bound − lower_bound) is how many times x appears.
+
+## The half-open template (the modern one)
+
+When the answer is "an index", the cleanest form keeps a half-open window [l, r) and converges l == r:
+
+int l = 0, r = (int)v.size();
+while (l < r) {
+    int mid = l + (r - l) / 2;
+    if (v[mid] < target) l = mid + 1;
+    else                 r = mid;
+}
+// l is now the first index with v[l] >= target (or v.size() if none)
+
+This template is the right one to memorise. It handles "first true index" problems uniformly.
+
+## Binary search on the ANSWER
+
+This is the unlock for many "minimum/maximum X such that condition Y holds" problems. The recipe:
+
+1. Decide what the answer is — usually a numeric value (capacity, time, length, position).
+2. Define a predicate canDo(x) that returns true iff x is feasible.
+3. Observe that canDo is monotonic — there's a threshold value where it flips from false to true (or true to false).
+4. Binary-search the answer range to find the threshold.
+
+Classic examples:
+
+- **Koko Eating Bananas** — minimum eating speed K. canDo(K) = "can finish in H hours at speed K". Monotonic: bigger K only helps. Binary-search K from 1 to max(pile).
+
+- **Capacity to Ship Packages in D Days** — minimum capacity C. canDo(C) = "can ship in ≤ D days with capacity C". Monotonic.
+
+- **Aggressive Cows** — maximum minimum-distance D between cows. canDo(D) = "can place all cows so adjacent pairs are ≥ D apart". Monotonic decreasing — bigger D harder.
+
+- **Median of Two Sorted Arrays** — binary-search the partition position.
+
+## Choosing the search range
+
+The trick is bracketing. For Koko: lo = 1, hi = max(pile). For capacity: lo = max(pkg), hi = sum(pkg). Get this wrong and the search either misses the answer (range too narrow) or runs forever (the predicate isn't monotonic over the range you chose).
+
+## Real vs. integer binary search
+
+When the answer is a real number (e.g. minimum distance), you can't write "if equal, return". Instead loop ~60 times (each halves precision; 60 gives ~10⁻¹⁸) or until hi - lo < EPS.`,
+          codeBlocks: [
+            {
+              title: "Classic binary search — find the index",
+              code: `int binarySearch(const vector<int>& a, int target) {
+    int l = 0, r = (int)a.size() - 1;
+    while (l <= r) {
+        int mid = l + (r - l) / 2;       // avoids overflow
+        if (a[mid] == target) return mid;
+        if (a[mid] <  target) l = mid + 1;
+        else                  r = mid - 1;
+    }
+    return -1;
+}`
+            },
+            {
+              title: "lower_bound / upper_bound from STL",
+              code: `#include <algorithm>
+vector<int> v = {1, 3, 3, 3, 5, 7};
+auto lb = lower_bound(v.begin(), v.end(), 3);   // points to first 3 (index 1)
+auto ub = upper_bound(v.begin(), v.end(), 3);   // points to 5 (index 4)
+cout << (ub - lb) << "\\n";                      // 3  (count of 3s)`
+            },
+            {
+              title: "Half-open template — first index with v[i] >= target",
+              code: `int lowerBoundManual(const vector<int>& v, int target) {
+    int l = 0, r = (int)v.size();
+    while (l < r) {
+        int mid = l + (r - l) / 2;
+        if (v[mid] < target) l = mid + 1;
+        else                 r = mid;
+    }
+    return l;                            // v.size() if no element is >= target
+}`
+            },
+            {
+              title: "Binary search on answer — Koko Eating Bananas",
+              code: `// Minimum speed K so Koko finishes piles[] within H hours.
+long long hoursAt(const vector<int>& p, int k) {
+    long long h = 0;
+    for (int x : p) h += (x + k - 1) / k;     // ceil(x / k)
+    return h;
+}
+
+int minEatingSpeed(vector<int>& piles, int H) {
+    int lo = 1, hi = *max_element(piles.begin(), piles.end());
+    while (lo < hi) {
+        int mid = lo + (hi - lo) / 2;
+        if (hoursAt(piles, mid) <= H) hi = mid;
+        else                          lo = mid + 1;
+    }
+    return lo;
+}`
+            },
+            {
+              title: "Search a rotated sorted array",
+              code: `int searchRotated(vector<int>& a, int target) {
+    int l = 0, r = a.size() - 1;
+    while (l <= r) {
+        int mid = l + (r - l) / 2;
+        if (a[mid] == target) return mid;
+        if (a[l] <= a[mid]) {                 // left half is sorted
+            if (a[l] <= target && target < a[mid]) r = mid - 1;
+            else                                   l = mid + 1;
+        } else {                              // right half is sorted
+            if (a[mid] < target && target <= a[r]) l = mid + 1;
+            else                                   r = mid - 1;
+        }
+    }
+    return -1;
+}`
+            },
+            {
+              title: "Real-valued binary search (60 iterations gives full double precision)",
+              code: `double findSqrt(double x) {
+    double lo = 0, hi = max(1.0, x);
+    for (int it = 0; it < 60; it++) {
+        double mid = (lo + hi) / 2;
+        if (mid * mid < x) lo = mid;
+        else               hi = mid;
+    }
+    return lo;
+}`
+            }
+          ],
+          complexity: { time: "O(log n) per search; binary search on answer O(log(range) · cost(predicate))", space: "O(1) iterative; O(log n) recursive" },
+          keyPoints: [
+            "Always write mid = l + (r - l) / 2 to avoid integer overflow.",
+            "Two templates: closed [l, r] with l <= r, or half-open [l, r) with l < r — pick one and stick with it.",
+            "lower_bound returns first iterator >= x; upper_bound returns first iterator > x. Their difference is the count.",
+            "Binary search on the answer: binary-search the numeric answer; check feasibility with a predicate.",
+            "The predicate must be MONOTONIC (one flip point in the range) for binary search on answer to work.",
+            "Bracketing matters: lo and hi must contain the true answer for the search to converge.",
+            "Real-valued binary search: loop 60 times (precision halves each step → ~10⁻¹⁸).",
+            "Rotated sorted array: one half is always sorted — figure out which, then narrow."
+          ],
+          pitfalls: [
+            "mid = (l + r) / 2 OVERFLOWS when l + r exceeds INT_MAX.",
+            "Off-by-one in the loop condition: [l, r] uses l <= r; [l, r) uses l < r. Mixing them loops forever.",
+            "Forgetting that lower_bound/upper_bound need a SORTED range. They return undefined results otherwise.",
+            "Choosing a non-monotonic predicate — binary search on answer silently returns garbage.",
+            "Initial range too small — if the answer is outside [lo, hi], the search returns the boundary.",
+            "Updating l = mid (not mid + 1) when the half-open template requires it — infinite loop.",
+            "On a rotated array, the trick is which half is sorted (check a[l] <= a[mid])."
+          ],
           videoId: "TbbSJrY5GqQ",
           videoSearch: "binary search"
         },
         {
           name: "Recursion Fundamentals",
-          explanation: "Detailed notes coming soon. Base case + recursive case. Visualize with a recursion tree. Recursion depth = call-stack space.",
+          explanation: `Recursion is a function calling itself with a smaller version of the same problem until the problem becomes trivial. It's the foundation for divide-and-conquer, backtracking, tree/graph traversal, and dynamic programming — once you internalise recursion, half of DSA becomes natural.
+
+The simplest mental model: a recursive function is a contract. Assume the function works for every smaller input. Use that assumption to solve the current input. Verify the base case.
+
+## The two ingredients
+
+**Base case** — when the problem is so small you can answer it directly without recursing. Every recursive function needs at least one. No base case = infinite recursion = stack overflow.
+
+**Recursive case** — assume the function works for a smaller subproblem, call it, combine its result with the current step.
+
+Factorial, the cliché example:
+
+int fact(int n) {
+    if (n <= 1) return 1;             // base case
+    return n * fact(n - 1);           // recursive case
+}
+
+The trust is the magic. Don't trace fact(5) by hand all the way down. Trust that fact(4) returns 24, multiply by 5, return 120. That mental shift is what makes recursion easy.
+
+## The call stack and recursion depth
+
+Every recursive call creates a new stack frame holding the local variables and the return address. When the call returns, its frame is popped. A recursion of depth d uses O(d) stack space, even if the function allocates no other memory.
+
+Default thread stack on most systems is 1–8 MB → roughly 10⁵–10⁶ recursive calls before overflow. Linked-list reversal recursively on a 10⁶-node list will crash.
+
+## Recursion tree — the visualisation
+
+For each recursive call, draw a node. Children = the recursive calls it makes. Leaves = base cases.
+
+fib(5)
+├── fib(4)
+│   ├── fib(3)
+│   │   ├── fib(2)  ...
+│   │   └── fib(1)
+│   └── fib(2)
+└── fib(3)
+    ├── fib(2)
+    └── fib(1)
+
+The tree's HEIGHT is the recursion depth (space). The total number of NODES is the time complexity. For naive fib, height = n and nodes = O(2ⁿ).
+
+## Recurrence relations
+
+T(n) describes how time grows. Write it from the structure of the recursion:
+
+Factorial:          T(n) = T(n-1) + O(1) → O(n)
+Binary search:      T(n) = T(n/2) + O(1) → O(log n)
+Merge sort:         T(n) = 2 T(n/2) + O(n) → O(n log n)
+Naive Fibonacci:    T(n) = T(n-1) + T(n-2) + O(1) → O(φⁿ) ≈ O(1.618ⁿ)
+Tower of Hanoi:     T(n) = 2 T(n-1) + O(1) → O(2ⁿ)
+
+The Master Theorem solves T(n) = a T(n/b) + O(n^c) in closed form.
+
+## Tail recursion
+
+A call is tail-recursive if it's the last action in the function (no work after the recursive call). Some languages (and some compilers, with optimisation enabled) reuse the same stack frame for tail calls, eliminating the depth problem. C++ does this only when the optimiser feels like it — don't rely on it. Rewrite a deep tail-recursive function as a loop if depth is a concern.
+
+## Common patterns
+
+- **Linear recursion** — one recursive call per invocation (factorial, list traversal). O(n) work, O(n) stack.
+- **Binary recursion** — two recursive calls (Fibonacci, tree traversal, merge sort).
+- **Multiple recursion** — k recursive calls (k-way trees, k-ary search).
+- **Mutual recursion** — two functions call each other (rare, but elegant for grammars).
+
+## When to STOP using recursion
+
+Recursion is beautiful and slow. Each call has overhead: stack frame setup, register saves, jump. For tight loops or hot paths, an iterative version is faster. Also, recursion that re-computes overlapping subproblems (naive fib) becomes exponential — memoize it or convert to DP.`,
+          codeBlocks: [
+            {
+              title: "Factorial — the textbook recursion",
+              code: `long long fact(int n) {
+    if (n <= 1) return 1;             // base case
+    return n * fact(n - 1);           // recursive case
+}`
+            },
+            {
+              title: "Power — exponentiation by squaring (O(log n))",
+              code: `long long power(long long base, long long exp) {
+    if (exp == 0) return 1;
+    long long half = power(base, exp / 2);
+    if (exp % 2 == 0) return half * half;
+    return half * half * base;
+}`
+            },
+            {
+              title: "Sum of digits",
+              code: `int sumDigits(int n) {
+    if (n == 0) return 0;
+    return (n % 10) + sumDigits(n / 10);
+}`
+            },
+            {
+              title: "Print 1 to N and N to 1 — two recursion shapes",
+              code: `void printUp(int i, int n) {
+    if (i > n) return;
+    cout << i << " ";
+    printUp(i + 1, n);
+}
+
+void printDown(int i, int n) {
+    if (i > n) return;
+    printDown(i + 1, n);
+    cout << i << " ";                 // print AFTER recursing — reverse order
+}`
+            },
+            {
+              title: "Naive Fibonacci (don't actually use this for n > 30)",
+              code: `// T(n) = T(n-1) + T(n-2) + O(1) → O(φⁿ) — exponential.
+long long fib(int n) {
+    if (n < 2) return n;
+    return fib(n - 1) + fib(n - 2);
+}`
+            },
+            {
+              title: "Reverse a string with recursion",
+              code: `void reverseStr(string& s, int l, int r) {
+    if (l >= r) return;               // base case
+    swap(s[l], s[r]);
+    reverseStr(s, l + 1, r - 1);      // recurse on smaller range
+}`
+            }
+          ],
+          complexity: { time: "Depends on the recurrence", space: "O(depth) call-stack" },
+          keyPoints: [
+            "Two ingredients: a base case and a recursive case that calls a smaller version.",
+            "The 'trust' principle: assume the function works for smaller inputs, then build on that.",
+            "Every recursive call uses O(1) stack — total stack used = recursion depth.",
+            "Naive recursion that re-computes overlapping subproblems (Fibonacci) is exponential — memoize.",
+            "Recurrence relations capture time complexity: T(n) = a T(n/b) + work.",
+            "Master Theorem solves T(n) = a T(n/b) + O(n^c) — memorise the three cases.",
+            "C++ doesn't reliably do tail-call optimisation — deep tail recursion can still overflow.",
+            "When recursion depth exceeds 10⁵–10⁶, switch to iteration or convert to BFS/DFS-iterative."
+          ],
+          pitfalls: [
+            "Missing or unreachable base case — infinite recursion crashes with stack overflow.",
+            "Recursive call with the SAME argument instead of a smaller one — also infinite.",
+            "Forgetting to RETURN the recursive call's result — function returns garbage.",
+            "Computing the same subproblem repeatedly — memoize for an instant speedup.",
+            "Mutating shared state across recursion levels without unwinding it on the way out — bugs in backtracking.",
+            "Assuming the compiler will tail-call-optimise — write a loop if depth could blow the stack."
+          ],
           videoId: "9OsMG4fI4OY",
           videoSearch: "recursion basics"
         },
         {
           name: "Backtracking (Subsets, Permutations, N-Queens)",
-          explanation: "Detailed notes coming soon. Build candidate solutions step by step, undoing (backtracking) when a branch fails. The template covers subsets, permutations, combinations, and constraint-based problems.",
+          explanation: `Backtracking is "intelligent brute force". You explore the tree of all possible decisions, but the moment a branch can't possibly lead to a valid solution you prune it and back up. It's the right tool whenever a problem asks for "all" / "any" / "count of" arrangements satisfying constraints, and when the constraints can be checked incrementally.
+
+## The template
+
+void backtrack(current_state, decision_index) {
+    if (is_complete(current_state)) {
+        record(current_state);
+        return;
+    }
+    for (choice of available_choices(decision_index)) {
+        if (!is_valid(current_state + choice)) continue;   // prune
+        apply(choice);                                      // try
+        backtrack(current_state, decision_index + 1);
+        undo(choice);                                       // un-try
+    }
+}
+
+Three moving parts: the **state** (the partial solution you're building), the **choices** at each step, and the **prune** (cut branches that can't succeed).
+
+The "undo" is what makes it BACKTRACK rather than just brute force — you share one mutable state across the whole recursion to save memory, and you reverse each step on the way back up.
+
+## Subsets — the simplest
+
+For each element, decide "include or skip". 2ⁿ subsets total.
+
+void subsets(int i, vector<int>& a, vector<int>& cur, vector<vector<int>>& out) {
+    if (i == (int)a.size()) { out.push_back(cur); return; }
+    cur.push_back(a[i]);             // include
+    subsets(i + 1, a, cur, out);
+    cur.pop_back();                  // un-include
+    subsets(i + 1, a, cur, out);     // skip
+}
+
+## Permutations
+
+For each position, try every unused element. n! permutations total.
+
+void perms(vector<int>& a, int i, vector<vector<int>>& out) {
+    if (i == (int)a.size()) { out.push_back(a); return; }
+    for (int j = i; j < (int)a.size(); j++) {
+        swap(a[i], a[j]);            // pick a[j] for position i
+        perms(a, i + 1, out);
+        swap(a[i], a[j]);            // undo
+    }
+}
+
+## N-Queens — backtracking with pruning
+
+Place n queens on an n×n board so none attack each other. State = which column each row's queen sits in. Try each column in the current row; if it conflicts with any previously placed queen, prune. If you reach row n, record the solution.
+
+The key insight: you can check "does column c work for row r?" in O(r) by walking previous rows. With three sets (used columns, used diagonals, used anti-diagonals) you can check in O(1).
+
+## Pruning is the difference
+
+A backtracking solution with no pruning is just brute force — it'll time out. Effective pruning:
+
+- **Constraint propagation** — drop choices that immediately violate a constraint.
+- **Bounding** — track the current best; abandon any branch that can't beat it.
+- **Symmetry breaking** — for problems like N-Queens, the first row only needs ⌈n/2⌉ starting columns; mirror the rest.
+- **Ordering choices** — try the most constrained variable / least constraining value first.
+
+## Counting paths vs enumerating them
+
+If the problem asks "how MANY" rather than "list them all", you can often skip building the state — just increment a counter when you reach a leaf. That removes the O(n) cost per solution.
+
+## When NOT to use backtracking
+
+If the search tree is too large with no good pruning, backtracking will still time out. Check:
+- Is there a DP formulation? (Overlapping subproblems → memoize.)
+- Is there a greedy or graph algorithm? (For pathfinding, BFS / Dijkstra usually wins.)
+- Can you reformulate as constraint satisfaction with smarter heuristics? (For Sudoku, AC-3 + backtracking.)
+
+Common backtracking problems: subsets, permutations, combinations, N-Queens, Sudoku, word search on a grid, generate parentheses, palindrome partitioning, Hamilton path, knight's tour.`,
+          codeBlocks: [
+            {
+              title: "All subsets of an array (the include/skip template)",
+              code: `void subsets(int i, vector<int>& a, vector<int>& cur, vector<vector<int>>& out) {
+    if (i == (int)a.size()) { out.push_back(cur); return; }
+    // include a[i]
+    cur.push_back(a[i]);
+    subsets(i + 1, a, cur, out);
+    cur.pop_back();
+    // skip a[i]
+    subsets(i + 1, a, cur, out);
+}`
+            },
+            {
+              title: "All permutations via swap-and-recurse",
+              code: `void perms(vector<int>& a, int i, vector<vector<int>>& out) {
+    if (i == (int)a.size()) { out.push_back(a); return; }
+    for (int j = i; j < (int)a.size(); j++) {
+        swap(a[i], a[j]);
+        perms(a, i + 1, out);
+        swap(a[i], a[j]);             // undo
+    }
+}`
+            },
+            {
+              title: "N-Queens with three boolean arrays for O(1) attack check",
+              code: `int n;
+vector<bool> col, diag1, diag2;       // diag1 = r + c; diag2 = r - c + n
+vector<int> placement;                 // placement[r] = column of queen in row r
+int count = 0;
+
+void solve(int r) {
+    if (r == n) { count++; return; }
+    for (int c = 0; c < n; c++) {
+        if (col[c] || diag1[r + c] || diag2[r - c + n]) continue;  // prune
+        col[c] = diag1[r + c] = diag2[r - c + n] = true;
+        placement[r] = c;
+        solve(r + 1);
+        col[c] = diag1[r + c] = diag2[r - c + n] = false;          // undo
+    }
+}`
+            },
+            {
+              title: "Generate all valid n-pair parentheses",
+              code: `void gen(int open, int close, int n, string& cur, vector<string>& out) {
+    if ((int)cur.size() == 2 * n) { out.push_back(cur); return; }
+    if (open < n)  { cur.push_back('('); gen(open + 1, close, n, cur, out); cur.pop_back(); }
+    if (close < open) { cur.push_back(')'); gen(open, close + 1, n, cur, out); cur.pop_back(); }
+}`
+            },
+            {
+              title: "Combination Sum (target sum from candidates, reuse allowed)",
+              code: `void combo(vector<int>& a, int target, int start, vector<int>& cur, vector<vector<int>>& out) {
+    if (target == 0) { out.push_back(cur); return; }
+    for (int i = start; i < (int)a.size(); i++) {
+        if (a[i] > target) continue;             // prune
+        cur.push_back(a[i]);
+        combo(a, target - a[i], i, cur, out);     // i (not i+1) → reuse allowed
+        cur.pop_back();
+    }
+}`
+            },
+            {
+              title: "Word search on a grid (DFS with visited-undo)",
+              code: `bool dfs(vector<vector<char>>& g, int r, int c, const string& w, int k) {
+    if (k == (int)w.size()) return true;
+    int R = g.size(), C = g[0].size();
+    if (r < 0 || r >= R || c < 0 || c >= C || g[r][c] != w[k]) return false;
+    char saved = g[r][c]; g[r][c] = '#';              // mark visited
+    bool found = dfs(g, r+1, c, w, k+1) || dfs(g, r-1, c, w, k+1)
+              || dfs(g, r, c+1, w, k+1) || dfs(g, r, c-1, w, k+1);
+    g[r][c] = saved;                                   // undo
+    return found;
+}`
+            }
+          ],
+          complexity: { time: "Subsets O(2ⁿ); permutations O(n!); N-Queens roughly O(n!) with pruning", space: "O(depth) recursion + O(state)" },
+          keyPoints: [
+            "Backtracking = brute-force-with-pruning. Try, recurse, undo.",
+            "Three moving parts: state (partial solution), choices (at each step), prune (skip impossible branches).",
+            "The 'undo' step is what makes it backtracking, not just exhaustive enumeration.",
+            "Subsets: include/skip each element → 2ⁿ.",
+            "Permutations: swap-and-recurse on each position → n!.",
+            "Pruning is the difference between AC and TLE — eliminate impossible branches early.",
+            "Use three boolean arrays for O(1) attack-check in N-Queens (cols, diag1, diag2).",
+            "When the problem says 'how many' (not 'list them'), increment a counter at the leaf instead of copying state."
+          ],
+          pitfalls: [
+            "Forgetting to UNDO the choice after the recursive call — state leaks into sibling branches.",
+            "Pushing onto the result vector by reference and continuing to mutate — the recorded answer changes later.",
+            "Wrong index for 'reuse allowed' vs 'reuse forbidden' — i vs i+1 in the recursive call.",
+            "Recomputing constraints inside the loop instead of caching incrementally.",
+            "Generating duplicate subsets/permutations when the input has duplicates — sort + skip-equal pattern.",
+            "No pruning → 2ⁿ or n! brute force times out. Add the prune BEFORE recursing, not after."
+          ],
           videoId: "pNzljlzDCiI",
           videoSearch: "backtracking subsets permutations"
         },
         {
           name: "Memoization Intro",
-          explanation: "Detailed notes coming soon. Cache the result of each subproblem the first time you solve it — turns many exponential recursions into polynomial.",
+          explanation: `Memoization is the simplest possible introduction to dynamic programming: take a recursive function that re-computes the same subproblem many times, and cache each result the first time you compute it. The second time the function is called with the same arguments, return the cached value. That single change can drop an exponential algorithm to polynomial in one line.
+
+It's "top-down DP" — you keep the natural recursive structure of the problem and just add memory. Tabulation ("bottom-up DP", next week) builds the same answers iteratively from the base case up. Both work; memoization is usually easier to derive from the recursion, and is the right place to START learning DP.
+
+## The classic example — Fibonacci
+
+Naive recursion:
+
+long long fib(int n) {
+    if (n < 2) return n;
+    return fib(n-1) + fib(n-2);
+}
+
+fib(40) takes seconds; fib(50) takes forever. The recursion tree has 2ⁿ leaves and recomputes the same fib(k) over and over. Add a cache and the same function runs fib(10⁶) in a blink:
+
+unordered_map<int, long long> memo;
+long long fib(int n) {
+    if (n < 2) return n;
+    if (memo.count(n)) return memo[n];           // cache hit
+    return memo[n] = fib(n-1) + fib(n-2);        // compute, cache, return
+}
+
+The cache turns 2ⁿ work into O(n) — each subproblem now runs only once.
+
+## When does memoization help?
+
+Two requirements:
+
+1. **Overlapping subproblems** — the same recursive call is made many times. (Fibonacci, grid path counts, knapsack — yes. Merge sort — no, each subproblem is unique.)
+
+2. **Optimal substructure** — the answer for n is computed from the answers for smaller inputs. Almost all DP problems have this.
+
+If both hold, memoization gives the best speedup of any technique you'll learn this term.
+
+## How to add memoization to ANY recursive function
+
+1. Identify the parameters that uniquely determine the answer (the "state").
+2. Pick a cache keyed by those parameters (array if integer indices; map otherwise).
+3. At the top of the function: if the state is in the cache, return the cached value.
+4. At the return: store the computed value in the cache.
+
+That's it. The recursion itself doesn't change.
+
+## State design — the only hard part
+
+The state must be everything the answer depends on. Forget a parameter → wrong answer or extra work. Include too many → cache too big.
+
+Climbing Stairs: state is i (current step). 1-D cache.
+Knapsack: state is (i, remaining_capacity). 2-D cache.
+Edit Distance: state is (i, j) — pointers into the two strings.
+Grid path: state is (r, c).
+Coin Change: state is target — what's left to make.
+
+## Array vs map for the cache
+
+If state is small integers, use a vector (vector<int> memo(n+1, -1)) — fastest. Use -1 as "not computed yet" if 0 is a valid answer; otherwise use a separate boolean vector.
+
+If state is huge or sparse, use unordered_map. Slightly slower but works for anything hashable.
+
+For 2-D states, use vector<vector<int>>; for 3-D, vector<vector<vector<int>>>; etc.
+
+## Cost vs benefit
+
+Memoization changes time from O(branching^depth) to O(state_count * work_per_state). For Fibonacci that's 2ⁿ → n. For 0/1 Knapsack: 2ⁿ → n·W. For Edit Distance: 3ⁿ → n·m. Always a massive win when overlapping subproblems exist.
+
+Cost: O(state_count) extra memory. For most problems that's worth it.
+
+## Memoization → Tabulation
+
+Once you've memoized a recursive function, converting to bottom-up tabulation is mechanical:
+
+1. Make the cache an explicit array dp[].
+2. Initialise dp at the base cases.
+3. Fill dp in order of dependencies (smaller subproblems first).
+4. Return dp[full_input].
+
+We'll do this in detail in Week 7. For now, focus on the memoization mental model: recursion + cache.`,
+          codeBlocks: [
+            {
+              title: "Fibonacci — naive vs memoized",
+              code: `// Naive: O(φⁿ) ≈ O(1.618ⁿ). fib(40) takes seconds.
+long long fibNaive(int n) {
+    if (n < 2) return n;
+    return fibNaive(n - 1) + fibNaive(n - 2);
+}
+
+// Memoized: O(n) time, O(n) space.
+vector<long long> memo;
+long long fibMemo(int n) {
+    if (n < 2) return n;
+    if (memo[n] != -1) return memo[n];
+    return memo[n] = fibMemo(n - 1) + fibMemo(n - 2);
+}
+
+int main() {
+    memo.assign(101, -1);
+    cout << fibMemo(100) << "\\n";       // works instantly
+}`
+            },
+            {
+              title: "Climbing Stairs (1-D DP)",
+              code: `// Number of distinct ways to climb n stairs taking 1 or 2 at a time.
+vector<int> memo;
+int climb(int n) {
+    if (n <= 1) return 1;
+    if (memo[n] != -1) return memo[n];
+    return memo[n] = climb(n - 1) + climb(n - 2);
+}`
+            },
+            {
+              title: "Grid unique paths (2-D state)",
+              code: `// How many ways from (0,0) to (m-1, n-1) moving right or down?
+vector<vector<int>> memo;
+int paths(int r, int c, int m, int n) {
+    if (r == m - 1 && c == n - 1) return 1;
+    if (r >= m || c >= n) return 0;
+    if (memo[r][c] != -1) return memo[r][c];
+    return memo[r][c] = paths(r + 1, c, m, n) + paths(r, c + 1, m, n);
+}`
+            },
+            {
+              title: "0/1 Knapsack with memoization",
+              code: `vector<vector<int>> memo;
+int knap(vector<int>& w, vector<int>& v, int i, int cap) {
+    if (i < 0 || cap == 0) return 0;
+    if (memo[i][cap] != -1) return memo[i][cap];
+    int skip = knap(w, v, i - 1, cap);
+    int take = (w[i] <= cap) ? v[i] + knap(w, v, i - 1, cap - w[i]) : 0;
+    return memo[i][cap] = max(skip, take);
+}`
+            },
+            {
+              title: "Coin Change — minimum coins to make target",
+              code: `vector<int> memo;
+int coinChange(vector<int>& coins, int amt) {
+    if (amt == 0) return 0;
+    if (amt < 0)  return INT_MAX;
+    if (memo[amt] != -1) return memo[amt];
+    int best = INT_MAX;
+    for (int c : coins) {
+        int sub = coinChange(coins, amt - c);
+        if (sub != INT_MAX) best = min(best, sub + 1);
+    }
+    return memo[amt] = best;
+}`
+            },
+            {
+              title: "Map-based memoization (use when state isn't a simple int)",
+              code: `// State is a pair (i, j). Use unordered_map with a custom hash if needed.
+map<pair<int,int>, int> memo;
+int solve(int i, int j) {
+    if (/* base case */) return /* answer */;
+    auto key = make_pair(i, j);
+    if (memo.count(key)) return memo[key];
+    // ... compute ans recursively ...
+    return memo[key] = /* ans */;
+}`
+            }
+          ],
+          complexity: { time: "O(state_count × work_per_state) — typically O(n) to O(n·W) per problem", space: "O(state_count) for the cache + O(depth) recursion stack" },
+          keyPoints: [
+            "Memoization = recursion + cache. Compute each subproblem once; reuse the cached answer afterwards.",
+            "Requires overlapping subproblems (same recursive call made multiple times) AND optimal substructure.",
+            "Turns Fibonacci from O(2ⁿ) to O(n) — same algorithm, one cache.",
+            "Use vector<int> initialised to -1 (or sentinel) for integer-keyed states. Use unordered_map for complex keys.",
+            "State design is the only hard part: parameters must uniquely determine the answer.",
+            "Top-down (memoization) keeps the recursion; bottom-up (tabulation) replaces it with an iterative fill.",
+            "Mechanical conversion: write the recursion → identify state → add cache → memoize.",
+            "Trade memory for time — almost always worth it when overlapping subproblems exist."
+          ],
+          pitfalls: [
+            "Returning the cached value WITHOUT first checking it's actually been set (uninitialised reads).",
+            "Forgetting a parameter in the state → wrong answer or extra (correct but slow) recomputation.",
+            "Sentinel collision: using -1 as 'not computed' when -1 is a valid answer.",
+            "Cache shared across multiple test cases without clearing — answers leak from one input to the next.",
+            "Recursion depth blowing the stack on large n — switch to iterative tabulation if depth > 10⁵.",
+            "Memoizing a function that doesn't have overlapping subproblems (merge sort, binary search) — no speedup, just overhead."
+          ],
           videoId: "sPeKpctCL-c",
           videoSearch: "memoization dp introduction"
         }
