@@ -4809,55 +4809,1859 @@ When memory is critical — bitset for small sets, or accept the O(n log n) sort
       concepts: [
         {
           name: "Binary Tree Fundamentals",
-          explanation: "Detailed notes coming soon. Tree terminology: root, leaf, parent, child, depth, height. Difference between general trees and binary trees.",
+          explanation: `A tree is a connected, acyclic, hierarchical structure. One node sits at the top (the root); each node has zero or more children. A BINARY tree is the special case where every node has at most two children, conventionally called LEFT and RIGHT. Binary trees are the foundation for binary search trees, heaps, expression trees, decision trees, segment trees, tries — basically half of all non-trivial data structures.
+
+This concept is about the vocabulary and the standard node representation. Get fluent with the terms; the rest of the week assumes them.
+
+## The vocabulary
+
+**Node** — a single element holding a value and pointers to its children.
+**Root** — the topmost node. The only node with no parent.
+**Leaf** — a node with no children.
+**Internal node** — a node with at least one child (i.e. not a leaf).
+**Parent / Child** — direct hierarchical neighbours.
+**Sibling** — nodes that share a parent.
+**Ancestor / Descendant** — reachable by walking UP or DOWN any number of edges.
+**Subtree** — a node plus all of its descendants.
+
+## Depth, height, level
+
+**Depth of a node** — number of edges from root to that node. Root has depth 0.
+**Height of a node** — number of edges on the longest root-to-leaf path STARTING at that node. Leaves have height 0.
+**Height of the tree** — height of the root.
+**Level k** — all nodes at depth k.
+
+A tree with n nodes has at LEAST log₂(n+1) - 1 height (balanced) and at MOST n-1 height (skewed like a linked list).
+
+## Special binary trees
+
+**Full binary tree** — every internal node has exactly TWO children (no node has just one).
+**Complete binary tree** — every level except possibly the last is fully filled, and the last level is filled left-to-right. (Heaps are complete binary trees.)
+**Perfect binary tree** — full AND every leaf is at the same depth. Has exactly 2^(h+1) − 1 nodes.
+**Balanced binary tree** — for every node, the heights of its left and right subtrees differ by at most 1 (AVL definition). Guarantees O(log n) height.
+**Skewed tree** — every node has only one child. Effectively a linked list. Height n-1, bad performance.
+
+## The standard node representation
+
+struct Node {
+    int val;
+    Node* left;
+    Node* right;
+    Node(int v) : val(v), left(nullptr), right(nullptr) {}
+};
+
+A nullptr child means "no child here". The pointer-based representation is what we'll use throughout. Array-based representations exist (heaps use one), but pointer trees are the general case.
+
+## Building a tiny tree by hand
+
+Node* root = new Node(1);
+root->left  = new Node(2);
+root->right = new Node(3);
+root->left->left  = new Node(4);
+root->left->right = new Node(5);
+
+Visualised:
+        1
+       / \\
+      2   3
+     / \\
+    4   5
+
+## Recursion on trees — the universal idiom
+
+Trees and recursion are made for each other. The pattern: do something at the current node, recurse on left, recurse on right, combine.
+
+int size(Node* root) {
+    if (!root) return 0;
+    return 1 + size(root->left) + size(root->right);
+}
+
+The base case is always "null pointer → return zero / base value". The recursive case is "this node + result from left subtree + result from right subtree".
+
+This shape — combine the answers from your children — is called POST-ORDER RECURSION and is the engine behind most tree algorithms.
+
+## Why trees are everywhere
+
+File systems, DOM trees, expression parse trees, organisation charts, scene graphs in 3D rendering — all hierarchies. Plus the data-structure family: BST (sorted), heap (priority), trie (string prefixes), segment / Fenwick (range queries), B-tree (databases), AVL / Red-Black (balanced BSTs).
+
+For interviews, every tree problem is a recursion problem in disguise. Get comfortable writing 4-line recursive solutions and you've solved 90% of the chapter.`,
+          codeBlocks: [
+            {
+              title: "Node definition + build a tree by hand",
+              code: `struct Node {
+    int val;
+    Node* left;
+    Node* right;
+    Node(int v) : val(v), left(nullptr), right(nullptr) {}
+};
+
+int main() {
+    Node* root = new Node(1);
+    root->left  = new Node(2);
+    root->right = new Node(3);
+    root->left->left  = new Node(4);
+    root->left->right = new Node(5);
+    // tree is:
+    //        1
+    //       / \\
+    //      2   3
+    //     / \\
+    //    4   5
+}`
+            },
+            {
+              title: "Count nodes — the simplest recursion",
+              code: `int size(Node* root) {
+    if (!root) return 0;
+    return 1 + size(root->left) + size(root->right);
+}`
+            },
+            {
+              title: "Count leaves",
+              code: `int countLeaves(Node* root) {
+    if (!root) return 0;
+    if (!root->left && !root->right) return 1;
+    return countLeaves(root->left) + countLeaves(root->right);
+}`
+            },
+            {
+              title: "Sum of all values",
+              code: `int treeSum(Node* root) {
+    if (!root) return 0;
+    return root->val + treeSum(root->left) + treeSum(root->right);
+}`
+            },
+            {
+              title: "Search for a value (returns true/false)",
+              code: `bool contains(Node* root, int target) {
+    if (!root) return false;
+    if (root->val == target) return true;
+    return contains(root->left, target) || contains(root->right, target);
+}`
+            },
+            {
+              title: "Build from an array (level-order, -1 = null)",
+              code: `// Read like a heap: a[0]=root, a[2i+1]=left, a[2i+2]=right.
+Node* buildLevel(vector<int>& a, int i) {
+    if (i >= (int)a.size() || a[i] == -1) return nullptr;
+    Node* n = new Node(a[i]);
+    n->left  = buildLevel(a, 2 * i + 1);
+    n->right = buildLevel(a, 2 * i + 2);
+    return n;
+}`
+            }
+          ],
+          complexity: { time: "Most basic traversals are O(n); recursion uses O(h) stack where h is tree height", space: "O(n) for the tree + O(h) recursion" },
+          keyPoints: [
+            "Binary tree: each node has at most TWO children — conventionally left and right.",
+            "Depth of a node = edges from root; height = longest path down to a leaf.",
+            "A balanced tree has height O(log n); a skewed tree has height O(n).",
+            "Standard representation: a struct/class with value + left pointer + right pointer.",
+            "nullptr left/right means 'no child here' — base case for almost every recursion.",
+            "Recursive pattern: base case (null), recurse left, recurse right, combine results.",
+            "Full / complete / perfect / balanced / skewed — vocabulary that comes up in problem statements.",
+            "Trees underpin BST, heap, trie, segment tree, AVL — get fluent with the shape."
+          ],
+          pitfalls: [
+            "Forgetting the if (!root) return base; guard — null-deref crashes.",
+            "Confusing depth with height — depth grows DOWN from root; height grows UP from leaves.",
+            "Off-by-one between 'nodes' and 'edges' — height counts edges, not nodes.",
+            "Building trees by hand without freeing memory — leaks pile up.",
+            "Treating left as 'smaller' on a generic binary tree — that's only true for BSTs.",
+            "Modifying the tree while recursing over it — invariants break, recursion confuses."
+          ],
           videoId: "_jKa4gycZTw",
           videoSearch: "binary tree introduction"
         },
         {
           name: "Tree Traversals (Inorder, Preorder, Postorder)",
-          explanation: "Detailed notes coming soon. Three depth-first orderings. Inorder of a BST is sorted. Each has a recursive and iterative version.",
+          explanation: `A tree traversal visits every node exactly once. For a binary tree there are three classic depth-first orderings — preorder, inorder, postorder — plus a breadth-first one (level order, next concept). The three depth-first orderings differ only in WHERE you visit the current node relative to recursing on left and right.
+
+These are the building blocks of every tree algorithm: serialize/deserialize, expression evaluation, syntax-directed translation, BST validation, DFS-based subtree summaries.
+
+## The three DFS orderings
+
+For each node you do three things in some order: VISIT (process the node), LEFT (recurse on left), RIGHT (recurse on right). Pick the order:
+
+**Preorder**:  VISIT → LEFT → RIGHT
+**Inorder**:   LEFT → VISIT → RIGHT
+**Postorder**: LEFT → RIGHT → VISIT
+
+That's the whole definition. The "order" word refers to where the VISIT happens.
+
+## On this tree
+
+        1
+       / \\
+      2   3
+     / \\   \\
+    4   5   6
+
+- Preorder:  1, 2, 4, 5, 3, 6     (root first, then subtree)
+- Inorder:   4, 2, 5, 1, 3, 6     (left subtree, root, right subtree)
+- Postorder: 4, 5, 2, 6, 3, 1     (subtree fully, then root)
+
+## Why each matters
+
+**Preorder** — perfect for COPYING a tree or for SERIALISING (writing the tree to a string/file). The root appears first, so deserialisation can rebuild it top-down.
+
+**Inorder** — for a BST, inorder visits values in SORTED order. That's the magic that makes BSTs so useful for ordered queries.
+
+**Postorder** — perfect for DELETING a tree (delete children before the parent) and for any algorithm that needs the children's answers before computing the parent's (height, diameter, max-path-sum, isBalanced).
+
+## Recursive implementation
+
+void preorder(Node* n) {
+    if (!n) return;
+    cout << n->val << " ";    // VISIT
+    preorder(n->left);
+    preorder(n->right);
+}
+
+void inorder(Node* n) {
+    if (!n) return;
+    inorder(n->left);
+    cout << n->val << " ";    // VISIT
+    inorder(n->right);
+}
+
+void postorder(Node* n) {
+    if (!n) return;
+    postorder(n->left);
+    postorder(n->right);
+    cout << n->val << " ";    // VISIT
+}
+
+Each is O(n) time and O(h) recursion stack.
+
+## Iterative implementation
+
+Sometimes you must avoid recursion (very deep trees, language constraints). Use an explicit stack:
+
+**Iterative preorder** — push root; pop, visit, push RIGHT then LEFT (so left is on top, processed next).
+
+stack<Node*> st;
+if (root) st.push(root);
+while (!st.empty()) {
+    Node* n = st.top(); st.pop();
+    cout << n->val << " ";
+    if (n->right) st.push(n->right);
+    if (n->left)  st.push(n->left);
+}
+
+**Iterative inorder** — walk left, pushing every node. Pop and visit. Then walk right's leftmost chain.
+
+stack<Node*> st;
+Node* curr = root;
+while (curr || !st.empty()) {
+    while (curr) { st.push(curr); curr = curr->left; }
+    curr = st.top(); st.pop();
+    cout << curr->val << " ";
+    curr = curr->right;
+}
+
+**Iterative postorder** — trickier. Easiest: do "preorder with right before left" (root, right, left) then reverse the output. Or use two stacks.
+
+## Morris traversal (no stack, no recursion)
+
+A neat O(n) time, O(1) extra-space trick for inorder: temporarily rewire the rightmost node of the left subtree to point back to the current node, traverse, restore. Rarely needed but a classic interview question.
+
+## Reconstruction from traversals
+
+You can reconstruct a unique binary tree from PREORDER + INORDER (the preorder's first element is the root; find it in inorder to split left/right subtrees; recurse). Same with POSTORDER + INORDER. You CANNOT reconstruct from preorder + postorder alone — they don't uniquely determine the shape.
+
+## Big-O picture
+
+| Op                  | Time | Space      |
+|---------------------|------|------------|
+| Any traversal       | O(n) | O(h) stack |
+| Reconstruct tree    | O(n) with hash map for inorder index lookup |
+| Morris inorder      | O(n) | O(1)       |
+| Serialize           | O(n) | O(n) output|
+
+Get the recursive forms automatic, learn the iterative inorder template by heart (it's the messy one), and you've got every traversal-based problem.`,
+          codeBlocks: [
+            {
+              title: "All three recursive traversals",
+              code: `void preorder(Node* n) {
+    if (!n) return;
+    cout << n->val << " ";
+    preorder(n->left);
+    preorder(n->right);
+}
+
+void inorder(Node* n) {
+    if (!n) return;
+    inorder(n->left);
+    cout << n->val << " ";
+    inorder(n->right);
+}
+
+void postorder(Node* n) {
+    if (!n) return;
+    postorder(n->left);
+    postorder(n->right);
+    cout << n->val << " ";
+}`
+            },
+            {
+              title: "Iterative preorder",
+              code: `void preorderIter(Node* root) {
+    if (!root) return;
+    stack<Node*> st; st.push(root);
+    while (!st.empty()) {
+        Node* n = st.top(); st.pop();
+        cout << n->val << " ";
+        if (n->right) st.push(n->right);
+        if (n->left)  st.push(n->left);
+    }
+}`
+            },
+            {
+              title: "Iterative inorder — the messy one to memorise",
+              code: `void inorderIter(Node* root) {
+    stack<Node*> st;
+    Node* curr = root;
+    while (curr || !st.empty()) {
+        while (curr) { st.push(curr); curr = curr->left; }
+        curr = st.top(); st.pop();
+        cout << curr->val << " ";
+        curr = curr->right;
+    }
+}`
+            },
+            {
+              title: "Iterative postorder via reversed 'root-right-left'",
+              code: `void postorderIter(Node* root) {
+    if (!root) return;
+    stack<Node*> st; st.push(root);
+    vector<int> out;
+    while (!st.empty()) {
+        Node* n = st.top(); st.pop();
+        out.push_back(n->val);
+        if (n->left)  st.push(n->left);
+        if (n->right) st.push(n->right);
+    }
+    reverse(out.begin(), out.end());
+    for (int x : out) cout << x << " ";
+}`
+            },
+            {
+              title: "Reconstruct tree from preorder + inorder",
+              code: `unordered_map<int,int> inIdx;             // inorder value → index
+
+Node* build(vector<int>& pre, int& p, int l, int r) {
+    if (l > r) return nullptr;
+    int v = pre[p++];
+    Node* n = new Node(v);
+    int m = inIdx[v];
+    n->left  = build(pre, p, l, m - 1);
+    n->right = build(pre, p, m + 1, r);
+    return n;
+}
+
+Node* buildTree(vector<int>& pre, vector<int>& in) {
+    for (int i = 0; i < (int)in.size(); i++) inIdx[in[i]] = i;
+    int p = 0;
+    return build(pre, p, 0, in.size() - 1);
+}`
+            },
+            {
+              title: "Validate BST via inorder (must be strictly increasing)",
+              code: `Node* prev = nullptr;
+bool isBST(Node* root) {
+    if (!root) return true;
+    if (!isBST(root->left)) return false;
+    if (prev && prev->val >= root->val) return false;
+    prev = root;
+    return isBST(root->right);
+}`
+            }
+          ],
+          complexity: { time: "Any traversal O(n); Morris inorder O(n) with O(1) extra space", space: "Recursive O(h); explicit stack O(h); Morris O(1)" },
+          keyPoints: [
+            "Three DFS orderings differ only in WHERE you visit the node (before / between / after recursion).",
+            "Preorder: root, left, right. Use for serialisation, copy, tree-print.",
+            "Inorder: left, root, right. For a BST, this visits values in sorted order.",
+            "Postorder: left, right, root. Use when the parent needs children's answers (height, diameter, delete).",
+            "Recursive forms are 4 lines each — write them from memory.",
+            "Iterative inorder uses 'walk left pushing, pop visit, go right' — the classic interview template.",
+            "Iterative postorder is best done as 'preorder with right before left' then reverse.",
+            "Unique tree reconstruction needs preorder + inorder (or postorder + inorder), NOT preorder + postorder."
+          ],
+          pitfalls: [
+            "Forgetting the base case (if (!n) return;) — null deref.",
+            "Iterative postorder is the trickiest — the 'two-stack' or 'reverse preorder' tricks are easy to get wrong.",
+            "Using a global `prev` for BST validation without resetting it between test cases.",
+            "Confusing inorder/preorder/postorder names — write the visit-position out explicitly when in doubt.",
+            "Deleting nodes during preorder/inorder — postorder is the only safe one for delete-the-tree.",
+            "Assuming the tree is balanced when computing recursion-stack cost — skewed trees blow O(n) stack."
+          ],
           videoId: "67zlUtAr2LE",
           videoSearch: "tree traversal inorder preorder postorder"
         },
         {
           name: "Level Order Traversal (BFS on tree)",
-          explanation: "Detailed notes coming soon. Walk a tree level by level using a queue. Many tree problems (right view, zig-zag, average per level) reduce to a level-order walk with a twist.",
+          explanation: `Level-order traversal walks a tree top to bottom, left to right — level by level. It's just BFS applied to a tree, using a queue. The operation is simple, but it unlocks an entire family of problems: right view, zig-zag, level averages, level-by-level min/max, vertical order, bottom view, and serialisation in level-order format (LeetCode's default).
+
+## The basic algorithm
+
+queue<Node*> q;
+if (root) q.push(root);
+while (!q.empty()) {
+    Node* n = q.front(); q.pop();
+    cout << n->val << " ";
+    if (n->left)  q.push(n->left);
+    if (n->right) q.push(n->right);
+}
+
+Each node is pushed and popped once → O(n) time, O(W) space where W is the maximum width of the tree (usually O(n/2) for a balanced tree).
+
+## The "process level at a time" template
+
+When you need to know which nodes belong to which level (right view, zig-zag, level averages), use a slight variant: at the start of each loop iteration, snapshot the current queue size — that's the level's width — and only process that many nodes.
+
+while (!q.empty()) {
+    int sz = q.size();              // nodes at this level
+    vector<int> level;
+    for (int i = 0; i < sz; i++) {
+        Node* n = q.front(); q.pop();
+        level.push_back(n->val);
+        if (n->left)  q.push(n->left);
+        if (n->right) q.push(n->right);
+    }
+    record(level);                  // do something with this level
+}
+
+This is the template you'll reach for 90% of the time. Memorise it.
+
+## Common level-order variants
+
+**Level-order with grouping** — return vector<vector<int>>, one inner vector per level. Direct application of the template.
+
+**Right side view** — last value pushed to `level` at each iteration.
+
+**Left side view** — first value at each iteration.
+
+**Zig-zag (or boustrophedon)** — flip the order on odd levels. Use a deque or reverse alternate level vectors.
+
+**Bottom view** — for each column (x-coordinate), keep the LAST node seen during level order. Use a map<int,int>.
+
+**Top view** — for each column, keep the FIRST node seen during level order.
+
+**Vertical order** — group nodes by column index; level-order ensures top-down order within each column.
+
+**Minimum depth** — return the level number at which you first see a LEAF. Faster than DFS for unbalanced trees.
+
+**Connect next pointers (Populating Next Right Pointers)** — link each node's `next` to the next node on the same level.
+
+## DFS for level info?
+
+You CAN compute most of these with DFS, passing the current depth as a parameter and indexing into an external vector<vector<int>>. The BFS version is usually cleaner and just as fast — and uses less stack for skewed trees.
+
+void dfs(Node* n, int depth, vector<vector<int>>& out) {
+    if (!n) return;
+    if ((int)out.size() <= depth) out.push_back({});
+    out[depth].push_back(n->val);
+    dfs(n->left,  depth + 1, out);
+    dfs(n->right, depth + 1, out);
+}
+
+## When NOT to use level order
+
+If the algorithm needs subtree-aware information (height, diameter, ancestor relations, child aggregation), DFS is the natural fit — level order doesn't know which children belong to which parent without extra bookkeeping.`,
+          codeBlocks: [
+            {
+              title: "Basic level-order print",
+              code: `void levelOrder(Node* root) {
+    if (!root) return;
+    queue<Node*> q;
+    q.push(root);
+    while (!q.empty()) {
+        Node* n = q.front(); q.pop();
+        cout << n->val << " ";
+        if (n->left)  q.push(n->left);
+        if (n->right) q.push(n->right);
+    }
+}`
+            },
+            {
+              title: "Group by level — the template",
+              code: `vector<vector<int>> levels(Node* root) {
+    vector<vector<int>> out;
+    if (!root) return out;
+    queue<Node*> q; q.push(root);
+    while (!q.empty()) {
+        int sz = q.size();
+        vector<int> level;
+        for (int i = 0; i < sz; i++) {
+            Node* n = q.front(); q.pop();
+            level.push_back(n->val);
+            if (n->left)  q.push(n->left);
+            if (n->right) q.push(n->right);
+        }
+        out.push_back(level);
+    }
+    return out;
+}`
+            },
+            {
+              title: "Right Side View",
+              code: `vector<int> rightView(Node* root) {
+    vector<int> out;
+    if (!root) return out;
+    queue<Node*> q; q.push(root);
+    while (!q.empty()) {
+        int sz = q.size();
+        for (int i = 0; i < sz; i++) {
+            Node* n = q.front(); q.pop();
+            if (i == sz - 1) out.push_back(n->val);     // last in level
+            if (n->left)  q.push(n->left);
+            if (n->right) q.push(n->right);
+        }
+    }
+    return out;
+}`
+            },
+            {
+              title: "Zig-zag level order",
+              code: `vector<vector<int>> zigzag(Node* root) {
+    vector<vector<int>> out;
+    if (!root) return out;
+    queue<Node*> q; q.push(root);
+    bool leftToRight = true;
+    while (!q.empty()) {
+        int sz = q.size();
+        vector<int> level(sz);
+        for (int i = 0; i < sz; i++) {
+            Node* n = q.front(); q.pop();
+            int idx = leftToRight ? i : sz - 1 - i;
+            level[idx] = n->val;
+            if (n->left)  q.push(n->left);
+            if (n->right) q.push(n->right);
+        }
+        out.push_back(level);
+        leftToRight = !leftToRight;
+    }
+    return out;
+}`
+            },
+            {
+              title: "Average of each level",
+              code: `vector<double> averageOfLevels(Node* root) {
+    vector<double> out;
+    if (!root) return out;
+    queue<Node*> q; q.push(root);
+    while (!q.empty()) {
+        int sz = q.size();
+        long long sum = 0;
+        for (int i = 0; i < sz; i++) {
+            Node* n = q.front(); q.pop();
+            sum += n->val;
+            if (n->left)  q.push(n->left);
+            if (n->right) q.push(n->right);
+        }
+        out.push_back((double)sum / sz);
+    }
+    return out;
+}`
+            },
+            {
+              title: "Minimum depth — first leaf encountered",
+              code: `int minDepth(Node* root) {
+    if (!root) return 0;
+    queue<Node*> q; q.push(root);
+    int depth = 1;
+    while (!q.empty()) {
+        int sz = q.size();
+        for (int i = 0; i < sz; i++) {
+            Node* n = q.front(); q.pop();
+            if (!n->left && !n->right) return depth;
+            if (n->left)  q.push(n->left);
+            if (n->right) q.push(n->right);
+        }
+        depth++;
+    }
+    return depth;
+}`
+            }
+          ],
+          complexity: { time: "O(n) — each node pushed/popped once", space: "O(W) where W is max width (O(n) worst case)" },
+          keyPoints: [
+            "Level order = BFS on a tree. Queue does the heavy lifting.",
+            "Each node is pushed and popped once → O(n) time, O(width) space.",
+            "The 'snapshot queue size before draining' template gives you per-level grouping for free.",
+            "Right/left view, zig-zag, level average all use the same template with a small tweak.",
+            "Minimum depth: stop at the first leaf you see during BFS — faster than DFS for unbalanced trees.",
+            "DFS can compute the same things by passing depth as a parameter — pick whichever feels cleaner.",
+            "Max width of a tree at any level = max queue size during BFS.",
+            "Connecting next-right pointers uses level-order with a 'last in level' tracker."
+          ],
+          pitfalls: [
+            "Forgetting the 'snapshot queue size' step — you'll process levels in one big mush.",
+            "Pushing nullptr children — wastes time and breaks size-snapshot logic.",
+            "Using a stack instead of a queue — that gives DFS, not BFS.",
+            "Computing level-by-level depth with depth++ in the wrong place (inside vs outside the inner loop).",
+            "Forgetting that an empty tree has zero levels — handle root == nullptr up front.",
+            "Iterating with auto-incrementing index when you've already popped — use the snapshot size, not q.size() inside the loop."
+          ],
           videoId: "vQIiUWofWw8",
           videoSearch: "level order traversal bfs tree"
         },
         {
           name: "Tree Properties (depth, height, diameter)",
-          explanation: "Detailed notes coming soon. Depth = distance from root. Height = distance to farthest leaf. Diameter = longest path between any two nodes.",
+          explanation: `Once you know how to traverse a tree, the next step is computing properties about it: how tall is it, how wide is its longest path, is it balanced, what's the sum of every root-to-leaf path. All of these reduce to "POSTORDER recursion that aggregates the children's answers into the parent's answer".
+
+This concept is the gateway from "I can walk a tree" to "I can solve real tree problems".
+
+## Depth vs height — get this right
+
+**Depth of a node** — distance from ROOT. Root has depth 0. Computed top-down (pass depth as a parameter while recursing).
+
+**Height of a node** — distance to the FURTHEST leaf BELOW. Leaves have height 0. Computed bottom-up (recurse to children, take max + 1).
+
+For the WHOLE tree, depth and height refer to the deepest leaf — they're equal. The vocabulary distinction matters for individual nodes.
+
+int height(Node* root) {
+    if (!root) return -1;                  // -1 makes leaf height = 0
+    return 1 + max(height(root->left), height(root->right));
+}
+
+(Some definitions say height of a leaf is 1, height of null is 0. Either works — pick one and stick with it. The video lecture uses the leaf-is-1 convention.)
+
+## Maximum depth — the cleanest version
+
+int maxDepth(Node* root) {
+    if (!root) return 0;
+    return 1 + max(maxDepth(root->left), maxDepth(root->right));
+}
+
+This is THE classic "easy" tree problem and the foundation for everything else.
+
+## Diameter
+
+The diameter of a tree is the length of the LONGEST path between any two nodes. Crucially, that path doesn't have to pass through the root.
+
+For any node, the longest path going THROUGH that node has length height(left) + height(right). So the tree's diameter is the maximum of (left height + right height) over all nodes.
+
+The trick: compute this WHILE you compute height. One DFS, O(n).
+
+int diameter = 0;
+int h(Node* root) {
+    if (!root) return 0;
+    int l = h(root->left);
+    int r = h(root->right);
+    diameter = max(diameter, l + r);       // path through root has length l + r
+    return 1 + max(l, r);                   // return height to caller
+}
+
+## Balanced — height differs by at most 1 at every node
+
+Balanced (in the AVL sense): for every node, abs(height(left) - height(right)) <= 1.
+
+Naive: at each node, compute heights and compare → O(n²). Smart: combine "am I balanced?" with "what's my height?" in one DFS → O(n).
+
+int check(Node* root) {
+    if (!root) return 0;
+    int l = check(root->left);  if (l < 0) return -1;
+    int r = check(root->right); if (r < 0) return -1;
+    if (abs(l - r) > 1) return -1;          // sentinel "unbalanced"
+    return 1 + max(l, r);
+}
+bool isBalanced(Node* root) { return check(root) >= 0; }
+
+## More aggregations using the same pattern
+
+- **Sum of all nodes** — sum = root->val + sum(left) + sum(right).
+- **Maximum value** — max = max(root->val, max(left), max(right)).
+- **Count of leaves** — leaves = (root is leaf ? 1 : 0) + leaves(left) + leaves(right).
+- **Max root-to-leaf path sum** — current_sum + max(left_sum, right_sum); track max at every leaf.
+- **Sum of root-to-leaf numbers** (forming digits) — current * 10 + node->val, accumulate at leaves.
+
+## Subtree-level questions
+
+When the question is about every NODE having a subtree property, the answer is usually a single DFS that returns the property to the parent.
+
+- **Sum of every subtree** — at each node, compute sumSubtree = node->val + sumSubtree(left) + sumSubtree(right); record in a map or vector.
+- **Number of "good" subtrees** — analogous.
+- **Count of nodes whose value equals subtree-average** — DFS returns (sum, count); parent computes its own (sum, count) and checks node->val == sum/count.
+
+## The universal pattern
+
+Post-order recursion. Recurse left, recurse right, COMBINE the children's answers with the current node, return the combined answer (and optionally update a running global like max-diameter).
+
+For 90% of tree problems, the answer fits in 6 lines of recursive code. Train your eye to spot the post-order shape.`,
+          codeBlocks: [
+            {
+              title: "Maximum depth (classic warm-up)",
+              code: `int maxDepth(Node* root) {
+    if (!root) return 0;
+    return 1 + max(maxDepth(root->left), maxDepth(root->right));
+}`
+            },
+            {
+              title: "Diameter — compute alongside height in one DFS",
+              code: `int diameter = 0;
+
+int height(Node* root) {
+    if (!root) return 0;
+    int l = height(root->left);
+    int r = height(root->right);
+    diameter = max(diameter, l + r);   // path THROUGH this node
+    return 1 + max(l, r);
+}
+
+int treeDiameter(Node* root) {
+    diameter = 0;
+    height(root);
+    return diameter;                   // measured in EDGES
+}`
+            },
+            {
+              title: "isBalanced — combine 'balanced?' with 'height?'",
+              code: `int check(Node* root) {
+    if (!root) return 0;
+    int l = check(root->left);  if (l < 0) return -1;
+    int r = check(root->right); if (r < 0) return -1;
+    if (abs(l - r) > 1) return -1;
+    return 1 + max(l, r);
+}
+
+bool isBalanced(Node* root) { return check(root) >= 0; }`
+            },
+            {
+              title: "Minimum depth — shortest root-to-leaf path",
+              code: `int minDepth(Node* root) {
+    if (!root) return 0;
+    if (!root->left)  return 1 + minDepth(root->right);
+    if (!root->right) return 1 + minDepth(root->left);
+    return 1 + min(minDepth(root->left), minDepth(root->right));
+}`
+            },
+            {
+              title: "Max root-to-leaf path sum",
+              code: `int maxPathSum(Node* root) {
+    if (!root) return 0;
+    if (!root->left && !root->right) return root->val;
+    int l = root->left  ? maxPathSum(root->left)  : INT_MIN;
+    int r = root->right ? maxPathSum(root->right) : INT_MIN;
+    return root->val + max(l, r);
+}`
+            },
+            {
+              title: "Sum root-to-leaf numbers (digits)",
+              code: `// Each root-to-leaf path forms a number; sum them all.
+int dfs(Node* root, int cur) {
+    if (!root) return 0;
+    cur = cur * 10 + root->val;
+    if (!root->left && !root->right) return cur;
+    return dfs(root->left, cur) + dfs(root->right, cur);
+}
+
+int sumRootToLeaf(Node* root) { return dfs(root, 0); }`
+            }
+          ],
+          complexity: { time: "Most tree-property algorithms are O(n)", space: "O(h) recursion stack — O(log n) balanced, O(n) skewed" },
+          keyPoints: [
+            "Depth is measured from ROOT (top-down). Height is measured to FURTHEST LEAF (bottom-up).",
+            "Maximum depth = 1 + max(maxDepth(left), maxDepth(right)) with base case 0 for null.",
+            "Diameter passes through some node u; its length there is height(left) + height(right).",
+            "Compute diameter WHILE computing height — one DFS, O(n).",
+            "Balanced check returns a sentinel (-1) for 'unbalanced' to avoid recomputing heights.",
+            "Universal pattern: post-order DFS that combines children's answers into the parent's answer.",
+            "Naive 'compute heights at every node' is O(n²); the one-pass trick is O(n).",
+            "Many seemingly different tree problems reduce to a small variation of the depth/height template."
+          ],
+          pitfalls: [
+            "Mixing depth and height in code — keep one model and stick with it.",
+            "Returning -1 vs 0 for null — pick a convention; off-by-one in diameter is the classic bug.",
+            "Computing diameter as 'longest root-to-leaf path' — wrong; diameter can SKIP the root.",
+            "isBalanced's O(n²) naive version times out on big trees — combine with height for O(n).",
+            "Forgetting that minDepth is NOT just min(left, right) + 1 — a missing child can give 0 incorrectly.",
+            "Counting edges vs nodes — diameter usually means edges; double-check the problem statement."
+          ],
           videoId: "9fj_-Sr84CU",
           videoSearch: "depth height diameter binary tree"
         },
         {
           name: "Binary Search Tree (BST) — search, insert, delete",
-          explanation: "Detailed notes coming soon. Left subtree < node < right subtree. Search/insert/delete in O(log n) average, O(n) worst when the tree degenerates.",
+          explanation: `A binary search tree (BST) is a binary tree with one extra rule: for every node, every value in its LEFT subtree is smaller, and every value in its RIGHT subtree is larger. That single invariant turns search/insert/delete into O(log n) AVERAGE operations — and lets in-order traversal visit values in sorted order.
+
+The catch: BSTs are only O(log n) when they're balanced. A naive BST that gets sorted input degenerates into a linked list with O(n) operations. Real-world BSTs (AVL, Red-Black trees, std::set, std::map) use rotations to stay balanced; we'll mention rotations conceptually but the focus this lesson is the plain BST.
+
+## The invariant
+
+For every node n:
+- All values in n's LEFT subtree are STRICTLY LESS than n->val.
+- All values in n's RIGHT subtree are STRICTLY GREATER than n->val.
+
+(Some variants allow duplicates in one direction; for clarity we'll assume strict here.)
+
+Crucially, the invariant is recursive — left and right subtrees are themselves BSTs.
+
+## Search
+
+Standard binary search descent:
+
+bool search(Node* root, int target) {
+    if (!root) return false;
+    if (root->val == target) return true;
+    if (target < root->val) return search(root->left, target);
+    return search(root->right, target);
+}
+
+O(h) where h is height — log n for balanced trees, n for skewed.
+
+## Insert
+
+Find the correct empty slot and attach there.
+
+Node* insert(Node* root, int v) {
+    if (!root) return new Node(v);
+    if (v < root->val) root->left  = insert(root->left,  v);
+    else if (v > root->val) root->right = insert(root->right, v);
+    return root;
+}
+
+(If v == root->val you typically do nothing — duplicates aren't allowed in a standard BST. Some variants count occurrences instead.)
+
+## Delete — the only "hard" operation
+
+Three cases for deleting a node n:
+
+1. **n is a leaf** — just remove it.
+2. **n has ONE child** — replace n with its child.
+3. **n has TWO children** — replace n's value with its INORDER SUCCESSOR (smallest value in the right subtree), then delete that successor from the right subtree.
+
+The successor is found by going right once, then left as far as possible. The successor itself has at most one child (it's the leftmost in its subtree), so deleting it is case 1 or 2.
+
+(Equivalently, you can use the inorder PREDECESSOR — largest value in the left subtree. Either works.)
+
+Node* del(Node* root, int v) {
+    if (!root) return nullptr;
+    if (v < root->val) root->left = del(root->left, v);
+    else if (v > root->val) root->right = del(root->right, v);
+    else {                                  // found it
+        if (!root->left)  { Node* r = root->right; delete root; return r; }
+        if (!root->right) { Node* l = root->left;  delete root; return l; }
+        Node* succ = root->right;
+        while (succ->left) succ = succ->left;
+        root->val = succ->val;
+        root->right = del(root->right, succ->val);
+    }
+    return root;
+}
+
+## Inorder is sorted
+
+Inorder traversal of a BST visits values in increasing order. This single fact gives you:
+- Validate-BST in O(n) (one inorder pass, check strictly increasing).
+- Kth smallest element in O(h + k) (inorder until you've visited k nodes).
+- BST → sorted array in O(n).
+
+## Floor and ceiling
+
+floor(x) = largest value ≤ x.  ceiling(x) = smallest value ≥ x.
+
+int floor(Node* root, int x) {
+    int ans = -1;
+    while (root) {
+        if (root->val == x) return x;
+        if (root->val < x) { ans = root->val; root = root->right; }
+        else root = root->left;
+    }
+    return ans;
+}
+
+Both run in O(h).
+
+## Validate a BST
+
+Walk the tree with allowed (min, max) bounds. Each node must satisfy min < node->val < max; recurse with tighter bounds.
+
+bool valid(Node* root, long lo, long hi) {
+    if (!root) return true;
+    if (root->val <= lo || root->val >= hi) return false;
+    return valid(root->left, lo, root->val) && valid(root->right, root->val, hi);
+}
+
+Common bug: forgetting that the LEFT subtree's upper bound is the CURRENT node, not just the parent.
+
+## When the tree degenerates
+
+Insert sorted input (1, 2, 3, 4, ...) into a plain BST and you get a chain that goes right-only — height n. All ops become O(n).
+
+Self-balancing variants (AVL, Red-Black) maintain O(log n) height via rotations after every insert/delete. std::set and std::map use Red-Black trees internally. For competitive coding, std::set is the BST you'll actually use.`,
+          codeBlocks: [
+            {
+              title: "Search in a BST",
+              code: `bool search(Node* root, int target) {
+    if (!root) return false;
+    if (root->val == target) return true;
+    if (target < root->val) return search(root->left, target);
+    return search(root->right, target);
+}`
+            },
+            {
+              title: "Insert into a BST (recursive)",
+              code: `Node* insert(Node* root, int v) {
+    if (!root) return new Node(v);
+    if (v < root->val) root->left  = insert(root->left,  v);
+    else if (v > root->val) root->right = insert(root->right, v);
+    return root;
+}`
+            },
+            {
+              title: "Delete from a BST",
+              code: `Node* del(Node* root, int v) {
+    if (!root) return nullptr;
+    if (v < root->val)      root->left  = del(root->left,  v);
+    else if (v > root->val) root->right = del(root->right, v);
+    else {
+        if (!root->left)  { Node* r = root->right; delete root; return r; }
+        if (!root->right) { Node* l = root->left;  delete root; return l; }
+        Node* succ = root->right;                // inorder successor
+        while (succ->left) succ = succ->left;
+        root->val = succ->val;
+        root->right = del(root->right, succ->val);
+    }
+    return root;
+}`
+            },
+            {
+              title: "Validate a BST with (min, max) bounds",
+              code: `bool valid(Node* root, long lo, long hi) {
+    if (!root) return true;
+    if (root->val <= lo || root->val >= hi) return false;
+    return valid(root->left, lo, root->val)
+        && valid(root->right, root->val, hi);
+}
+
+bool isValidBST(Node* root) {
+    return valid(root, LONG_MIN, LONG_MAX);
+}`
+            },
+            {
+              title: "Kth smallest via inorder",
+              code: `int k, ans;
+void inorder(Node* root) {
+    if (!root || k == 0) return;
+    inorder(root->left);
+    if (--k == 0) { ans = root->val; return; }
+    inorder(root->right);
+}
+
+int kthSmallest(Node* root, int K) {
+    k = K;
+    inorder(root);
+    return ans;
+}`
+            },
+            {
+              title: "Lowest Common Ancestor in a BST (O(h))",
+              code: `Node* lca(Node* root, int a, int b) {
+    while (root) {
+        if (a < root->val && b < root->val) root = root->left;
+        else if (a > root->val && b > root->val) root = root->right;
+        else return root;                       // split point
+    }
+    return nullptr;
+}`
+            }
+          ],
+          complexity: { time: "Search/insert/delete O(h) — log n balanced, n skewed", space: "O(h) recursion stack" },
+          keyPoints: [
+            "BST invariant: every node's left subtree is strictly less, right subtree strictly greater.",
+            "Search/insert work like binary search — divide the problem by descending one side.",
+            "Delete has three cases: leaf, one-child, two-children (use inorder successor for the third).",
+            "Inorder traversal of a BST yields values in SORTED order — gold for validation, kth-smallest, range queries.",
+            "Validate by passing (min, max) bounds down the recursion — current must lie strictly between them.",
+            "Floor/ceiling/LCA all run in O(h) by descending one path through the tree.",
+            "Plain BST degenerates to O(n) on sorted input — use std::set / std::map (Red-Black trees) in real code.",
+            "AVL and Red-Black trees rotate after each mutation to keep height O(log n)."
+          ],
+          pitfalls: [
+            "Forgetting that the BST invariant is recursive — left's MAX must be < node, not just left->val.",
+            "Off-by-one on duplicates — pick a convention (strict vs allowed) and enforce it everywhere.",
+            "Deleting a two-child node by 'just removing it' breaks the structure — always use successor (or predecessor).",
+            "Validating by comparing only with the parent (instead of carrying (min, max) bounds down) is wrong.",
+            "Inserting unbalanced data into a plain BST → O(n) per op — switch to std::set for production.",
+            "Returning the wrong subtree after deletion — always reassign root->left or root->right to the recursive result."
+          ],
           videoId: "ScdwdSCnXDU",
           videoSearch: "binary search tree operations"
         },
         {
           name: "Lowest Common Ancestor (LCA)",
-          explanation: "Detailed notes coming soon. Deepest node that has both target nodes as descendants. BST has a shortcut; general binary trees use DFS recursion.",
+          explanation: `The lowest common ancestor of two nodes p and q in a tree is the DEEPEST node that has both p and q as descendants (a node is considered a descendant of itself). LCA is a building block for many tree problems: shortest path between two nodes, range minimum queries on Euler tours, tree-edit distance, expression-tree common-subexpression.
+
+The algorithm has two flavours depending on what tree you have:
+- **General binary tree** — recursive DFS that searches both subtrees.
+- **Binary search tree (BST)** — use the order to descend a single path.
+
+## LCA in a general binary tree — the elegant recursion
+
+The function returns:
+- nullptr if neither p nor q is in the subtree.
+- p (or q) if exactly one is found.
+- The LCA itself if both are found.
+
+Node* lca(Node* root, Node* p, Node* q) {
+    if (!root || root == p || root == q) return root;
+    Node* L = lca(root->left,  p, q);
+    Node* R = lca(root->right, p, q);
+    if (L && R) return root;       // p in one subtree, q in the other → root is LCA
+    return L ? L : R;               // both in one side, or neither
+}
+
+O(n) time, O(h) recursion stack. The beauty: no parent pointers, no preprocessing, no auxiliary data structures.
+
+## Why it works
+
+Trace the recursion. When you reach a node that IS p or q, you return it — that subtree has reported "I contain p (or q)". When both subtrees return non-null, the current node is the lowest ancestor that has p in one subtree and q in the other — by definition, the LCA. If only one subtree returns non-null, both nodes live in that subtree; propagate the answer up.
+
+## LCA in a BST — use the order
+
+In a BST, the BST property tells you where p and q must live relative to the current node.
+
+- If both p and q are less than root → LCA is in the left subtree.
+- If both are greater → LCA is in the right subtree.
+- Otherwise (the values split, or root equals one of them) → root is the LCA.
+
+Node* lcaBST(Node* root, Node* p, Node* q) {
+    while (root) {
+        if (p->val < root->val && q->val < root->val) root = root->left;
+        else if (p->val > root->val && q->val > root->val) root = root->right;
+        else return root;
+    }
+    return nullptr;
+}
+
+O(h) — log n on balanced BSTs, n on skewed.
+
+## Beyond the basic algorithm
+
+Once you have LCA, you get other things cheaply:
+
+- **Distance between two nodes** = depth(p) + depth(q) - 2 * depth(lca).
+- **Path from p to q** = walk up from p to lca, then down from lca to q.
+- **Sum / min / max on the path between p and q** = aggregate the two upward walks.
+
+## When you need MANY LCA queries
+
+If you'll query LCA millions of times, an O(n) DFS per query is too slow. Two standard preprocessing techniques:
+
+- **Binary lifting** — for each node, store its 2⁰-th, 2¹-th, ... ancestors. Each LCA query takes O(log n) after O(n log n) preprocessing.
+- **Euler tour + RMQ (Tarjan's LCA, sparse table)** — convert LCA to range-minimum-query on an Euler tour. O(n log n) preprocessing, O(1) per query.
+
+These are advanced (Week 6 graphs territory); for now, the simple recursive LCA is more than enough.
+
+## Common variants
+
+- **LCA when p or q may not exist** — modify the base case to return nullptr unless you've truly found both.
+- **LCA in a tree with parent pointers** — walk up from p, mark visited; walk up from q until you hit a marked node. O(h).
+- **LCA in a generic (non-binary) tree** — same DFS shape; iterate over all children instead of just left/right.
+
+## When NOT to use LCA
+
+If you only need DISTANCE and you have edge weights, prefer BFS/Dijkstra. If you need the actual PATH and the tree is huge, store parent pointers during traversal and reconstruct on demand.`,
+          codeBlocks: [
+            {
+              title: "LCA in a general binary tree (the elegant recursion)",
+              code: `Node* lca(Node* root, Node* p, Node* q) {
+    if (!root || root == p || root == q) return root;
+    Node* L = lca(root->left,  p, q);
+    Node* R = lca(root->right, p, q);
+    if (L && R) return root;          // p and q in different subtrees
+    return L ? L : R;
+}`
+            },
+            {
+              title: "LCA in a BST — use the order",
+              code: `Node* lcaBST(Node* root, Node* p, Node* q) {
+    while (root) {
+        if (p->val < root->val && q->val < root->val)      root = root->left;
+        else if (p->val > root->val && q->val > root->val) root = root->right;
+        else return root;
+    }
+    return nullptr;
+}`
+            },
+            {
+              title: "Distance between two nodes using LCA",
+              code: `int depth(Node* root, Node* target, int d) {
+    if (!root) return -1;
+    if (root == target) return d;
+    int l = depth(root->left, target, d + 1);
+    if (l != -1) return l;
+    return depth(root->right, target, d + 1);
+}
+
+int distance(Node* root, Node* p, Node* q) {
+    Node* a = lca(root, p, q);
+    return depth(a, p, 0) + depth(a, q, 0);
+}`
+            },
+            {
+              title: "LCA with parent pointers — set-based",
+              code: `Node* lcaParent(Node* p, Node* q) {
+    unordered_set<Node*> ancestors;
+    for (Node* n = p; n; n = n->parent) ancestors.insert(n);
+    for (Node* n = q; n; n = n->parent) if (ancestors.count(n)) return n;
+    return nullptr;
+}`
+            },
+            {
+              title: "LCA preprocessing — binary lifting (skeleton)",
+              code: `// Precompute up[k][v] = 2^k-th ancestor of v. O(n log n) prep, O(log n) per query.
+const int LOG = 20;
+vector<vector<int>> up(LOG, vector<int>(n));
+vector<int> depth(n);
+
+void dfs(int u, int p) {
+    up[0][u] = p;
+    for (int k = 1; k < LOG; k++) up[k][u] = up[k-1][up[k-1][u]];
+    for (int v : adj[u]) if (v != p) { depth[v] = depth[u] + 1; dfs(v, u); }
+}
+
+int lcaBL(int u, int v) {
+    if (depth[u] < depth[v]) swap(u, v);
+    int diff = depth[u] - depth[v];
+    for (int k = 0; k < LOG; k++) if ((diff >> k) & 1) u = up[k][u];
+    if (u == v) return u;
+    for (int k = LOG - 1; k >= 0; k--)
+        if (up[k][u] != up[k][v]) { u = up[k][u]; v = up[k][v]; }
+    return up[0][u];
+}`
+            }
+          ],
+          complexity: { time: "Recursive LCA O(n); BST LCA O(h); binary lifting O(log n) per query after O(n log n) prep", space: "O(h) recursion; O(n log n) for binary lifting" },
+          keyPoints: [
+            "LCA = deepest node that has both target nodes as descendants.",
+            "Recursive LCA on a general binary tree fits in 5 lines: search both sides, combine.",
+            "If left and right both return non-null, the current node is the LCA.",
+            "BST LCA exploits ordering: descend one side until the two target values split.",
+            "Distance(p, q) = depth(p) + depth(q) - 2 · depth(LCA(p, q)).",
+            "For many queries on the same tree, preprocess with binary lifting (O(log n) per query).",
+            "Path between two nodes goes UP to the LCA and DOWN to the other node.",
+            "Both targets being the same node returns that node (a node is its own ancestor)."
+          ],
+          pitfalls: [
+            "Forgetting the (root == p || root == q) base case — recursion fails to recognise found nodes.",
+            "Returning the wrong subtree when only one side has a result — handle 'L && R' before 'L ? L : R'.",
+            "BST LCA without the equality case — if one of the targets equals root, root IS the LCA.",
+            "Relying on parent pointers when the tree doesn't have them — restructure or pass them in.",
+            "Trying to compute LCA top-down without storing intermediate state — the recursive bottom-up returns naturally.",
+            "Binary-lifting implementations: off-by-one on the LOG cap, or forgetting to special-case u == v."
+          ],
           videoId: "JW-9nhktGGA",
           videoSearch: "lowest common ancestor binary tree"
         },
         {
           name: "Binary Heap (min-heap & max-heap)",
-          explanation: "Detailed notes coming soon. A complete binary tree stored in an array with the heap property. Insert and extract-root in O(log n).",
+          explanation: `A binary heap is a complete binary tree (every level filled left-to-right) that satisfies the heap property: in a MIN-heap, every parent is ≤ its children; in a MAX-heap, every parent is ≥ its children. The root therefore holds the minimum (or maximum) of all elements, and you can extract it in O(log n) — the foundation for priority queues, scheduling, top-K, Dijkstra, and heapsort.
+
+The killer feature is the array representation. Because a heap is a COMPLETE binary tree, you don't need pointers at all — you can store the n elements in a flat array of length n and use index arithmetic to find parents and children.
+
+## The array layout
+
+Store the tree level by level, left to right. For a node at index i:
+- Parent       = (i - 1) / 2
+- Left child   = 2 * i + 1
+- Right child  = 2 * i + 2
+
+If you index from 1 instead of 0, the formulas are even cleaner: parent = i/2, left = 2i, right = 2i+1.
+
+A 6-element max-heap visualised:
+
+         50
+        /  \\
+       30   40
+      / \\   /
+     20 10 35
+
+Stored as array: [50, 30, 40, 20, 10, 35].
+
+## The heap property
+
+**Min-heap**: a[parent(i)] ≤ a[i] for every i > 0.
+**Max-heap**: a[parent(i)] ≥ a[i] for every i > 0.
+
+This is WEAKER than "fully sorted" — siblings can be in any order. That's why heap operations are O(log n) (just one path through the tree), not O(n log n).
+
+## Insert — sift up
+
+Add the new element at the end of the array (the next empty leaf position). Then compare with its parent: if heap property is violated, swap. Repeat until either the property holds or you've reached the root.
+
+void siftUp(vector<int>& h, int i) {
+    while (i > 0) {
+        int p = (i - 1) / 2;
+        if (h[p] >= h[i]) break;          // max-heap: parent must be >= child
+        swap(h[p], h[i]);
+        i = p;
+    }
+}
+
+O(log n) — at most height of the tree.
+
+## Extract root (extract max for max-heap) — sift down
+
+Save root. Move the LAST element to the root. Sift down: compare with the larger child; if heap property is violated, swap with that child. Repeat.
+
+int extractMax(vector<int>& h) {
+    int top = h[0];
+    h[0] = h.back();
+    h.pop_back();
+    int i = 0, n = h.size();
+    while (true) {
+        int l = 2*i+1, r = 2*i+2, best = i;
+        if (l < n && h[l] > h[best]) best = l;
+        if (r < n && h[r] > h[best]) best = r;
+        if (best == i) break;
+        swap(h[i], h[best]);
+        i = best;
+    }
+    return top;
+}
+
+O(log n).
+
+## Peek (get max without removing)
+
+Just return a[0]. O(1).
+
+## Build a heap from an array — O(n), not O(n log n)
+
+The naive approach (insert each element one at a time) is O(n log n). The smart approach (heapify) is O(n):
+
+for (int i = n/2 - 1; i >= 0; i--) siftDown(a, i, n);
+
+Why O(n)? The leaves don't need to sift; internal nodes near the bottom sift only a short distance. The math works out to O(n) total — a delightful surprise.
+
+## Heapsort
+
+In-place O(n log n) sort using a max-heap:
+
+1. Build a max-heap of the input → O(n).
+2. Repeatedly extract max (which puts it at the END of the array as the heap shrinks) → n times O(log n).
+
+Result: array sorted ascending, in place, with O(1) extra memory beyond the recursion. Stable? No. Cache-friendly? Less than quicksort. Useful when worst-case O(n log n) is required.
+
+## Min-heap vs max-heap
+
+Same algorithm; flip the comparison. STL's std::priority_queue is a MAX-heap by default. For a min-heap: priority_queue<int, vector<int>, greater<int>>.
+
+## What heaps can't do
+
+- **Search by value** — O(n). Heaps don't help.
+- **Find the kth smallest in O(1)** — heap gives the min but you need to extract k times.
+- **Remove an arbitrary element** — O(n) to locate, then O(log n) to fix.
+- **Merge two heaps efficiently** — naive merge is O(n + m); special heaps (Fibonacci, leftist, skew) merge in O(log n).
+
+For these you'd reach for a BST, an indexed heap, or a Fibonacci heap.
+
+## Where heaps win
+
+- Priority queue (next concept).
+- Top-K largest/smallest (size-K heap, O(n log K)).
+- Median maintenance (two heaps).
+- Dijkstra and Prim (extract-min on the frontier).
+- Event-driven simulation.`,
+          codeBlocks: [
+            {
+              title: "Max-heap from scratch — siftUp and siftDown",
+              code: `struct MaxHeap {
+    vector<int> h;
+
+    void siftUp(int i) {
+        while (i > 0) {
+            int p = (i - 1) / 2;
+            if (h[p] >= h[i]) break;
+            swap(h[p], h[i]);
+            i = p;
+        }
+    }
+    void siftDown(int i) {
+        int n = h.size();
+        while (true) {
+            int l = 2*i+1, r = 2*i+2, best = i;
+            if (l < n && h[l] > h[best]) best = l;
+            if (r < n && h[r] > h[best]) best = r;
+            if (best == i) break;
+            swap(h[i], h[best]);
+            i = best;
+        }
+    }
+    void push(int v)   { h.push_back(v); siftUp(h.size() - 1); }
+    int  top()         { return h[0]; }
+    void pop()         { h[0] = h.back(); h.pop_back(); siftDown(0); }
+    int  size()        { return h.size(); }
+    bool empty()       { return h.empty(); }
+};`
+            },
+            {
+              title: "Heapify (build heap from array) — O(n)",
+              code: `void heapify(vector<int>& a) {
+    int n = a.size();
+    // start from the last internal node; leaves are already heaps
+    for (int i = n / 2 - 1; i >= 0; i--) {
+        int j = i;
+        while (true) {
+            int l = 2*j+1, r = 2*j+2, best = j;
+            if (l < n && a[l] > a[best]) best = l;
+            if (r < n && a[r] > a[best]) best = r;
+            if (best == j) break;
+            swap(a[j], a[best]);
+            j = best;
+        }
+    }
+}`
+            },
+            {
+              title: "Heapsort — in-place O(n log n)",
+              code: `void heapSort(vector<int>& a) {
+    int n = a.size();
+    heapify(a);                              // max-heap
+
+    for (int end = n - 1; end > 0; end--) {
+        swap(a[0], a[end]);                  // place max at the end
+        // sift down within shrinking heap
+        int j = 0, h = end;
+        while (true) {
+            int l = 2*j+1, r = 2*j+2, best = j;
+            if (l < h && a[l] > a[best]) best = l;
+            if (r < h && a[r] > a[best]) best = r;
+            if (best == j) break;
+            swap(a[j], a[best]);
+            j = best;
+        }
+    }
+}`
+            },
+            {
+              title: "std::priority_queue — STL max-heap",
+              code: `#include <queue>
+priority_queue<int> pq;             // max-heap by default
+pq.push(5); pq.push(1); pq.push(9); pq.push(3);
+cout << pq.top();                    // 9
+pq.pop();
+cout << pq.top();                    // 5`
+            },
+            {
+              title: "Min-heap with priority_queue",
+              code: `priority_queue<int, vector<int>, greater<int>> minPq;
+minPq.push(5); minPq.push(1); minPq.push(9);
+cout << minPq.top();                 // 1`
+            },
+            {
+              title: "Top-K largest using a size-K min-heap",
+              code: `vector<int> topK(vector<int>& a, int k) {
+    priority_queue<int, vector<int>, greater<int>> pq;
+    for (int x : a) {
+        pq.push(x);
+        if ((int)pq.size() > k) pq.pop();    // keep only the k largest
+    }
+    vector<int> out;
+    while (!pq.empty()) { out.push_back(pq.top()); pq.pop(); }
+    return out;                              // ascending; reverse for descending
+}`
+            }
+          ],
+          complexity: { time: "push O(log n), pop/extract-root O(log n), top O(1), heapify O(n), heapsort O(n log n)", space: "O(n) for the array" },
+          keyPoints: [
+            "A binary heap is a complete binary tree satisfying the heap property (parent ≤ or ≥ children).",
+            "Array representation: parent = (i-1)/2, left = 2i+1, right = 2i+2 — no pointers needed.",
+            "Insert = sift up: add at end, swap with parent while needed. O(log n).",
+            "Extract root = sift down: move last to root, swap with larger/smaller child while needed. O(log n).",
+            "Build a heap from an array in O(n) using heapify — bottom-up sift-down.",
+            "Heapsort = build max-heap + repeatedly extract max into end of array. O(n log n), in-place, NOT stable.",
+            "std::priority_queue is a max-heap; for min-heap pass greater<int> as the comparator.",
+            "Heaps give fast min/max + extract — but search by value is still O(n)."
+          ],
+          pitfalls: [
+            "Mixing 0-indexed and 1-indexed formulas — always commit to one.",
+            "Sifting up with a leaf when you should sift down (or vice versa) — wrong direction breaks the heap.",
+            "Forgetting to update i after a swap in the siftUp / siftDown loop — infinite loop or wrong place.",
+            "Using priority_queue<int> when you meant a min-heap — default is MAX.",
+            "Removing an arbitrary element by value — heap doesn't support O(log n) for that without an index-map.",
+            "Comparing pointers/objects in a heap without a proper comparator — undefined order."
+          ],
           videoId: "MMTQz-G8e-I",
           videoSearch: "binary heap min max heap"
         },
         {
           name: "Priority Queue & Heap Operations",
-          explanation: "Detailed notes coming soon. The std::priority_queue interface, heapify, sift-up, sift-down. Used for top-K, scheduling, and Dijkstra.",
+          explanation: `A priority queue is an abstract data type that lets you push values in any order but always pops the one with the HIGHEST PRIORITY first. In C++ it's implemented with a binary heap and exposed as std::priority_queue. Every advanced graph and scheduling algorithm uses one: Dijkstra, Prim, A*, top-K, median-stream, K-way merge — once you internalise the priority-queue mental model, those algorithms collapse into a few lines.
+
+This concept is about the STL interface and the practical patterns. The heap mechanics from the previous lesson explain HOW it runs underneath.
+
+## The operations
+
+push(x)         — add x. O(log n).
+top()           — peek at highest-priority element. O(1).
+pop()           — remove the top. O(log n).
+size() / empty()— O(1).
+
+That's the whole interface. No iteration. No search by value. No arbitrary removal. If you need those, you've outgrown priority_queue.
+
+## std::priority_queue — the STL version
+
+#include <queue>
+priority_queue<int> pq;            // max-heap of ints (default)
+pq.push(5); pq.push(1); pq.push(9); pq.push(3);
+cout << pq.top();                   // 9
+pq.pop();
+cout << pq.top();                   // 5
+
+Like std::stack and std::queue, it's a container adapter — wraps a vector internally.
+
+## Min-heap — the most-asked variant
+
+You'll need a min-heap (smallest first) more often than max. The trick is to provide greater<> as the comparator:
+
+priority_queue<int, vector<int>, greater<int>> minPq;
+minPq.push(5); minPq.push(1); minPq.push(9);
+cout << minPq.top();                // 1
+
+The three template parameters: element type, underlying container, comparator. The comparator semantics are "true means a comes BEFORE b in the heap order" — std::greater puts smaller values on top → min-heap.
+
+## Custom comparators
+
+For pairs, structs, or unusual orderings:
+
+auto cmp = [](const pair<int,int>& a, const pair<int,int>& b) {
+    return a.second > b.second;     // min-heap by second element
+};
+priority_queue<pair<int,int>, vector<pair<int,int>>, decltype(cmp)> pq(cmp);
+
+(In C++20 you can write just decltype(cmp). In older standards, the lambda must be a "stateless" comparator or you pass it through the constructor.)
+
+For a struct, define operator< (max-heap orders by it) or pass a custom comparator.
+
+## The half-dozen patterns
+
+**Top-K largest** — push everything onto a size-K MIN heap; whenever size > K, pop. End with K largest. O(n log K) and O(K) memory — beats a full sort.
+
+**Top-K smallest** — same idea with a max-heap, popping when size > K.
+
+**Kth largest** — Top-K largest + return the top of the heap (smallest of the K largest).
+
+**K-way merge** — push the heads of all K sorted lists into a min-heap; pop the smallest, emit, push that list's next head. Total O(N log K).
+
+**Median of a stream** — two heaps: a max-heap for the lower half, a min-heap for the upper half. Keep their sizes balanced. Median is either max-heap top, min-heap top, or the average.
+
+**Dijkstra's shortest path** — min-heap of (distance, vertex). Pop the closest, relax its neighbours, push.
+
+**Huffman coding** — repeatedly extract two smallest, combine, push.
+
+**Task scheduling** — min-heap of (next-available-time, task). Always process the soonest.
+
+## Performance reality check
+
+priority_queue has higher constants than a hand-rolled heap (function-call overhead, comparator indirection). For competitive programming hot loops, sometimes people inline a heap by hand. For everyday code, std::priority_queue is fast enough.
+
+For deeply repeated operations on the SAME element (decrease-key in Dijkstra), the standard trick is to push duplicates and ignore stale entries on pop — simpler than maintaining an indexed heap.
+
+## Limitations and workarounds
+
+| Need                          | priority_queue can't | Use instead                  |
+|-------------------------------|----------------------|------------------------------|
+| Search by value               | No                   | set, unordered_set           |
+| Remove arbitrary element      | No                   | indexed heap, multiset       |
+| Iterate over contents in order| No                   | Sort underlying container    |
+| Update an element's priority  | No                   | "lazy delete + reinsert"     |
+| Both ends fast (min AND max)  | No                   | multiset / two heaps         |
+
+The pattern: priority_queue does ONE thing extremely well (pop highest priority). For anything else, reach for a richer structure.`,
+          codeBlocks: [
+            {
+              title: "Default max-heap",
+              code: `priority_queue<int> pq;
+pq.push(5); pq.push(1); pq.push(9); pq.push(3);
+while (!pq.empty()) {
+    cout << pq.top() << " ";        // 9 5 3 1
+    pq.pop();
+}`
+            },
+            {
+              title: "Min-heap with greater<int>",
+              code: `priority_queue<int, vector<int>, greater<int>> minPq;
+minPq.push(5); minPq.push(1); minPq.push(9); minPq.push(3);
+while (!minPq.empty()) {
+    cout << minPq.top() << " ";     // 1 3 5 9
+    minPq.pop();
+}`
+            },
+            {
+              title: "Kth largest element in an array",
+              code: `int kthLargest(vector<int>& a, int k) {
+    priority_queue<int, vector<int>, greater<int>> pq;   // min-heap
+    for (int x : a) {
+        pq.push(x);
+        if ((int)pq.size() > k) pq.pop();
+    }
+    return pq.top();                 // smallest of the k largest
+}`
+            },
+            {
+              title: "Merge K sorted lists",
+              code: `struct Node { int val; int listIdx; int posIdx; };
+
+vector<int> mergeK(vector<vector<int>>& lists) {
+    auto cmp = [](const Node& a, const Node& b){ return a.val > b.val; };
+    priority_queue<Node, vector<Node>, decltype(cmp)> pq(cmp);
+
+    for (int i = 0; i < (int)lists.size(); i++)
+        if (!lists[i].empty()) pq.push({ lists[i][0], i, 0 });
+
+    vector<int> out;
+    while (!pq.empty()) {
+        Node t = pq.top(); pq.pop();
+        out.push_back(t.val);
+        if (t.posIdx + 1 < (int)lists[t.listIdx].size())
+            pq.push({ lists[t.listIdx][t.posIdx + 1], t.listIdx, t.posIdx + 1 });
+    }
+    return out;
+}`
+            },
+            {
+              title: "Median of a stream — two heaps",
+              code: `class MedianFinder {
+    priority_queue<int> lo;                                  // max-heap (lower half)
+    priority_queue<int, vector<int>, greater<int>> hi;       // min-heap (upper half)
+public:
+    void addNum(int x) {
+        lo.push(x);
+        hi.push(lo.top()); lo.pop();                         // balance
+        if (lo.size() < hi.size()) { lo.push(hi.top()); hi.pop(); }
+    }
+    double findMedian() {
+        return lo.size() > hi.size() ? lo.top() : (lo.top() + hi.top()) / 2.0;
+    }
+};`
+            },
+            {
+              title: "Dijkstra-style 'pop the closest' template",
+              code: `void dijkstraSketch(int src, vector<vector<pair<int,int>>>& adj, vector<int>& dist) {
+    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;
+    dist[src] = 0;
+    pq.push({0, src});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d > dist[u]) continue;                           // stale
+        for (auto [v, w] : adj[u]) {
+            if (d + w < dist[v]) {
+                dist[v] = d + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+}`
+            }
+          ],
+          complexity: { time: "push/pop O(log n), top O(1)", space: "O(n) backing container" },
+          keyPoints: [
+            "Priority queue ADT: push any order, pop highest priority. Backed by a binary heap.",
+            "std::priority_queue is a MAX-heap by default; pass greater<T> for a min-heap.",
+            "Custom comparators: three template params (T, Container, Comparator) or constructor-passed lambda.",
+            "Top-K pattern: size-K heap; pop when over capacity → O(n log K), O(K) memory.",
+            "K-way merge: heap of heads, emit smallest, push next from that list. O(N log K).",
+            "Median of stream: two heaps (max-heap lower half, min-heap upper half).",
+            "Dijkstra / Prim / A* / Huffman all need a priority queue at their core.",
+            "Can't search or update — use 'lazy delete + reinsert' or move to indexed heap if you need that."
+          ],
+          pitfalls: [
+            "Using priority_queue<int> when you wanted a min-heap — silent bug, wrong answer.",
+            "Custom comparators inverted — std::greater puts smaller on top (counterintuitive at first).",
+            "Calling top() on an empty priority_queue — undefined behaviour. Always check empty().",
+            "Modifying a key after pushing it — its priority changes; the heap invariant breaks silently.",
+            "Forgetting the 'lazy delete' check in Dijkstra (if (d > dist[u]) continue;) — TLE on dense graphs.",
+            "Comparator must be a STRICT WEAK ORDERING — undefined behaviour otherwise."
+          ],
           videoId: "XzA5Ts_vXfw",
           videoSearch: "priority queue c++"
         },
         {
           name: "Trie (Prefix Tree)",
-          explanation: "Detailed notes coming soon. A tree where each edge is a character. Insert, search, and startsWith all run in O(L). Used for autocomplete and dictionary problems.",
+          explanation: `A trie (rhymes with "tree", from re-TRIE-val) is a tree where each EDGE represents a character and each PATH from the root spells a string prefix. It's the canonical data structure for string-dictionary problems: insert/search/prefix-test all run in O(L) where L is the word length — independent of the size of the dictionary.
+
+Tries underpin autocomplete, spell-checkers, IP-routing tables (patricia trie variant), word-game solvers (boggle), and any problem that benefits from sharing common prefixes.
+
+## The shape
+
+The root is a special empty node. Each node has up to ALPHABET-SIZE children (26 for lowercase English; can be a map for arbitrary characters). A boolean flag at each node marks "a word ends here" — needed because "car" being inserted doesn't mean "ca" is also a word.
+
+Inserting "cat", "car", "card", "cab", "dog":
+
+         root
+         / \\
+        c   d
+        |   |
+        a   o
+       /|\\  |
+      t r b g(end)
+      | |(end)
+     (end)|
+       d
+      (end)
+
+Both "car" and "card" share "c→a→r". "cat" and "cab" share "c→a". The structure is naturally compact for languages with lots of common prefixes.
+
+## Node definition
+
+struct TrieNode {
+    TrieNode* child[26];     // lowercase English
+    bool isEnd = false;
+    TrieNode() { for (int i = 0; i < 26; i++) child[i] = nullptr; }
+};
+
+For arbitrary characters, use an unordered_map<char, TrieNode*> instead of a fixed array.
+
+## Insert
+
+For each character in the word, walk down the trie creating nodes as needed. Mark the final node's isEnd = true.
+
+void insert(TrieNode* root, const string& w) {
+    TrieNode* curr = root;
+    for (char c : w) {
+        int idx = c - 'a';
+        if (!curr->child[idx]) curr->child[idx] = new TrieNode();
+        curr = curr->child[idx];
+    }
+    curr->isEnd = true;
+}
+
+O(L).
+
+## Search a word
+
+Walk down; if any character is missing, return false. After walking, check isEnd.
+
+bool search(TrieNode* root, const string& w) {
+    TrieNode* curr = root;
+    for (char c : w) {
+        int idx = c - 'a';
+        if (!curr->child[idx]) return false;
+        curr = curr->child[idx];
+    }
+    return curr->isEnd;
+}
+
+O(L).
+
+## startsWith — prefix test (same as search but skip the isEnd check)
+
+bool startsWith(TrieNode* root, const string& pre) {
+    TrieNode* curr = root;
+    for (char c : pre) {
+        int idx = c - 'a';
+        if (!curr->child[idx]) return false;
+        curr = curr->child[idx];
+    }
+    return true;
+}
+
+This is the trie's superpower. Asking "are there any words starting with 'pre'?" is O(L), regardless of dictionary size.
+
+## Delete
+
+Trickier. To delete word w, walk down marking the path. At the end, clear isEnd. On the way back up (post-order), free any node that:
+- is not isEnd, AND
+- has no children left.
+
+If the word isn't in the trie, do nothing.
+
+## Memory cost
+
+Each node holds 26 pointers (208 bytes on 64-bit). A million-word trie can use lots of RAM. Solutions:
+- Use a map instead of a fixed array (saves memory when few children, costs lookup time).
+- Compress paths with no branching ("Radix tree" or "Patricia trie").
+- Suffix arrays / FM-index for very large corpora.
+
+For interview-scale problems (few thousand words), the simple version is fine.
+
+## Killer applications
+
+- **Autocomplete** — startsWith on the prefix; DFS the subtree to enumerate completions.
+- **Spell-check** — search with edit-distance DP layered on top.
+- **Word Search II** — board + dictionary; DFS the board while walking the trie.
+- **Longest Word in Dictionary built letter-by-letter** — DFS the trie collecting paths where every prefix is also a word.
+- **Replace Words** — replace each word with the SHORTEST prefix in the dictionary.
+- **Maximum XOR of Two Numbers** — a binary trie (bit-level) lets you find the pair with max XOR in O(n log MAX).
+- **IP routing** — longest prefix match.
+
+## Trade-offs vs hash set
+
+Hash set: O(L) insert/search (you hash the string), no prefix support.
+Trie: O(L) insert/search, O(L) startsWith, plus naturally enumerates all words with a prefix.
+
+For pure membership testing, a hash set is simpler and uses less memory. For prefix queries, the trie is unbeatable.`,
+          codeBlocks: [
+            {
+              title: "TrieNode and Trie class",
+              code: `class Trie {
+    struct Node {
+        Node* child[26];
+        bool isEnd = false;
+        Node() { for (int i = 0; i < 26; i++) child[i] = nullptr; }
+    };
+    Node* root;
+public:
+    Trie() : root(new Node()) {}
+
+    void insert(const string& w) {
+        Node* c = root;
+        for (char ch : w) {
+            int i = ch - 'a';
+            if (!c->child[i]) c->child[i] = new Node();
+            c = c->child[i];
+        }
+        c->isEnd = true;
+    }
+
+    bool search(const string& w) {
+        Node* c = walk(w);
+        return c && c->isEnd;
+    }
+
+    bool startsWith(const string& p) {
+        return walk(p) != nullptr;
+    }
+private:
+    Node* walk(const string& s) {
+        Node* c = root;
+        for (char ch : s) {
+            int i = ch - 'a';
+            if (!c->child[i]) return nullptr;
+            c = c->child[i];
+        }
+        return c;
+    }
+};`
+            },
+            {
+              title: "Delete a word (post-order cleanup)",
+              code: `bool del(Node* c, const string& w, int idx) {
+    if (idx == (int)w.size()) {
+        if (!c->isEnd) return false;
+        c->isEnd = false;
+    } else {
+        int i = w[idx] - 'a';
+        if (!c->child[i] || !del(c->child[i], w, idx + 1)) return false;
+        bool emptyChild = true;
+        for (int k = 0; k < 26; k++) if (c->child[i]->child[k]) { emptyChild = false; break; }
+        if (emptyChild && !c->child[i]->isEnd) {
+            delete c->child[i];
+            c->child[i] = nullptr;
+        }
+    }
+    return true;
+}`
+            },
+            {
+              title: "Autocomplete — enumerate all words with prefix",
+              code: `void dfs(Node* c, string& cur, vector<string>& out) {
+    if (c->isEnd) out.push_back(cur);
+    for (int i = 0; i < 26; i++) if (c->child[i]) {
+        cur.push_back('a' + i);
+        dfs(c->child[i], cur, out);
+        cur.pop_back();
+    }
+}
+
+vector<string> complete(Trie& t, const string& prefix) {
+    Node* c = t.walk(prefix);
+    if (!c) return {};
+    vector<string> out;
+    string cur = prefix;
+    dfs(c, cur, out);
+    return out;
+}`
+            },
+            {
+              title: "Word Search II — DFS board while walking the trie",
+              code: `void searchBoard(vector<vector<char>>& b, int r, int c, Node* n, string& cur, set<string>& out) {
+    int R = b.size(), C = b[0].size();
+    if (r < 0 || r >= R || c < 0 || c >= C) return;
+    char ch = b[r][c];
+    if (ch == '#' || !n->child[ch - 'a']) return;
+    n = n->child[ch - 'a'];
+    cur.push_back(ch);
+    if (n->isEnd) out.insert(cur);
+    b[r][c] = '#';                              // visited
+    searchBoard(b, r+1, c, n, cur, out);
+    searchBoard(b, r-1, c, n, cur, out);
+    searchBoard(b, r, c+1, n, cur, out);
+    searchBoard(b, r, c-1, n, cur, out);
+    b[r][c] = ch;                                // undo
+    cur.pop_back();
+}`
+            },
+            {
+              title: "Map-based trie (for non-English alphabets)",
+              code: `struct MapNode {
+    unordered_map<char, MapNode*> child;
+    bool isEnd = false;
+};
+
+void insert(MapNode* root, const string& w) {
+    MapNode* c = root;
+    for (char ch : w) {
+        if (!c->child.count(ch)) c->child[ch] = new MapNode();
+        c = c->child[ch];
+    }
+    c->isEnd = true;
+}`
+            },
+            {
+              title: "Binary trie for max-XOR pair",
+              code: `// Insert each number as a 32-bit binary string. For each query x, walk the trie
+// choosing the OPPOSITE bit at each step to maximise XOR.
+struct BTrie {
+    BTrie* child[2] = {nullptr, nullptr};
+};
+
+void insertBT(BTrie* root, int x) {
+    BTrie* c = root;
+    for (int b = 30; b >= 0; b--) {
+        int bit = (x >> b) & 1;
+        if (!c->child[bit]) c->child[bit] = new BTrie();
+        c = c->child[bit];
+    }
+}
+
+int maxXor(BTrie* root, int x) {
+    BTrie* c = root;
+    int xorSum = 0;
+    for (int b = 30; b >= 0; b--) {
+        int bit = (x >> b) & 1;
+        int want = 1 - bit;
+        if (c->child[want]) { xorSum |= (1 << b); c = c->child[want]; }
+        else                  c = c->child[bit];
+    }
+    return xorSum;
+}`
+            }
+          ],
+          complexity: { time: "Insert / search / startsWith all O(L) where L is word length", space: "O(total characters across all words) × ALPHABET pointers" },
+          keyPoints: [
+            "Trie = tree where each EDGE is a character; PATHS spell prefixes.",
+            "Each node has up to ALPHABET children + an isEnd flag.",
+            "Insert / search / startsWith are all O(L) — independent of dictionary size.",
+            "isEnd is mandatory — without it you can't distinguish 'car' from 'ca'.",
+            "Delete is the tricky operation: post-order cleanup of nodes with no children and isEnd false.",
+            "Fixed array (size 26) is fast; unordered_map handles arbitrary alphabets at memory cost.",
+            "Killer apps: autocomplete, spell-check, Word Search II, IP routing, max-XOR-pair (binary trie).",
+            "vs hash set: same insert/search cost, but trie also gives O(L) prefix queries and easy enumeration."
+          ],
+          pitfalls: [
+            "Forgetting isEnd — every search returns true if the path exists.",
+            "Confusing 'word in trie' (search) with 'prefix in trie' (startsWith).",
+            "Memory blow-up — 26-pointer nodes are 208 bytes on 64-bit; a million-word trie is heavy.",
+            "Off-by-one in c - 'a' for non-lowercase characters — validate input or use a map.",
+            "Forgetting to undo board markers in Word Search II — subsequent paths see false visited cells.",
+            "Naive delete that frees a node whose subtree still has words — corrupts the trie."
+          ],
           videoId: "dOXfffhl4uI",
           videoSearch: "trie data structure"
         }
