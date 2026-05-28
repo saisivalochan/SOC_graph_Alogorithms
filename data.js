@@ -1873,13 +1873,6 @@ n = n & (n - 1);
       links: [], videos: [], pdfs: [], notes: []
     },
 
-    /* ==================================================================
-       Weeks 2-7 are commented out below.
-       They will be enabled as content is finalised week by week.
-       To publish a week, move the closing comment delimiter
-       (the asterisk-slash) below that week.
-       ==================================================================
-
     // ============================================================
     // WEEK 2 — STL + Sorting + Searching + Recursion
     // ============================================================
@@ -1967,6 +1960,13 @@ n = n & (n - 1);
 
       links: [], videos: [], pdfs: [], notes: []
     },
+
+    /* ==================================================================
+       Weeks 3-7 are commented out below.
+       They will be enabled as content is finalised week by week.
+       To publish a week, move the closing comment delimiter
+       (the asterisk-slash) below that week.
+       ==================================================================
 
     // ============================================================
     // WEEK 3 — Linked Lists + Stacks/Queues + Hashing
@@ -2370,7 +2370,7 @@ n = n & (n - 1);
     }
 
     ==================================================================
-    End of commented-out weeks 2-7.
+    End of commented-out weeks 3-7.
     ================================================================== */
 
   ]
