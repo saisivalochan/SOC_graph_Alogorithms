@@ -1304,7 +1304,7 @@ int maxArea(const vector<int>& height) {
             "On 'remove duplicates', forgetting that the function only normalizes the prefix [0, write); the elements after are garbage.",
             "Comparing pointers (or indices) using unsigned arithmetic can wrap around — cast to int explicitly."
           ],
-          videoId: "BCLfxQja9dI",
+          videoId: "EbkMABpP52U",
           videoSearch: "two pointer technique"
         },
         {
@@ -1644,7 +1644,7 @@ public:
             "On 2-D prefix sums, mixing up 0-indexed input with 1-indexed prefix array.",
             "Using Kadane's on circular arrays — needs a small variant (max(kadane, total - minKadane))."
           ],
-          videoId: "6PxU4rfnf4Q",
+          videoId: "9IZYqostl2M",
           videoSearch: "kadane algorithm maximum subarray prefix sum"
         },
         {
