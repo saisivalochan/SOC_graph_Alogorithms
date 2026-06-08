@@ -3556,7 +3556,7 @@ void deleteNode(DNode* x) {
             "Reversing a list while traversing it — you'll lose access to next unless you save it first.",
             "Comparing nodes by value when you should compare by address (or vice-versa) — pick one model and stick with it."
           ],
-          videoId: "Crqgl10aIGQ",
+          videoId: "LyuuqCVkP5I",
           videoSearch: "linked list singly doubly"
         },
         {
@@ -3739,7 +3739,7 @@ Get cycle detection and in-place reverse fluent — most LL problems collapse in
             "Comparing pointers (==) when you mean values (->val == ->val), or vice versa.",
             "After reversing a sub-section, forgetting to relink the head and tail of the segment — the chain breaks."
           ],
-          videoId: "Fj1ywT9ETQk",
+          videoId: "-1E8ZMS0gSs",
           videoSearch: "floyd cycle detection linked list reversal"
         },
         {
