@@ -3360,13 +3360,6 @@ int solve(int i, int j) {
       links: [], videos: [], pdfs: [], notes: []
     },
 
-    /* ==================================================================
-       Weeks 3-7 are commented out below.
-       They will be enabled as content is finalised week by week.
-       To publish a week, move the closing comment delimiter
-       (the asterisk-slash) below that week.
-       ==================================================================
-
     // ============================================================
     // WEEK 3 — Linked Lists + Stacks/Queues + Hashing
     // ============================================================
@@ -4796,6 +4789,13 @@ When memory is critical — bitset for small sets, or accept the O(n log n) sort
 
       links: [], videos: [], pdfs: [], notes: []
     },
+
+    /* ==================================================================
+       Weeks 4-7 are commented out below.
+       They will be enabled as content is finalised week by week.
+       To publish a week, move the closing comment delimiter
+       (the asterisk-slash) below that week.
+       ==================================================================
 
     // ============================================================
     // WEEK 4 — Trees + BST + Heaps + Tries
@@ -11549,7 +11549,7 @@ void stress() {
     }
 
     ==================================================================
-    End of commented-out weeks 3-7.
+    End of commented-out weeks 4-7.
     ================================================================== */
 
   ]
