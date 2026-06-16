@@ -4790,13 +4790,6 @@ When memory is critical — bitset for small sets, or accept the O(n log n) sort
       links: [], videos: [], pdfs: [], notes: []
     },
 
-    /* ==================================================================
-       Weeks 4-7 are commented out below.
-       They will be enabled as content is finalised week by week.
-       To publish a week, move the closing comment delimiter
-       (the asterisk-slash) below that week.
-       ==================================================================
-
     // ============================================================
     // WEEK 4 — Trees + BST + Heaps + Tries
     // ============================================================
@@ -5239,7 +5232,7 @@ This is the template you'll reach for 90% of the time. Memorise it.
 
 **Level-order with grouping** — return vector<vector<int>>, one inner vector per level. Direct application of the template.
 
-**Right side view** — last value pushed to `level` at each iteration.
+**Right side view** — last value pushed to the level array at each iteration.
 
 **Left side view** — first value at each iteration.
 
@@ -5253,7 +5246,7 @@ This is the template you'll reach for 90% of the time. Memorise it.
 
 **Minimum depth** — return the level number at which you first see a LEAF. Faster than DFS for unbalanced trees.
 
-**Connect next pointers (Populating Next Right Pointers)** — link each node's `next` to the next node on the same level.
+**Connect next pointers (Populating Next Right Pointers)** — link each node's next pointer to the next node on the same level.
 
 ## DFS for level info?
 
@@ -6699,6 +6692,13 @@ int maxXor(BTrie* root, int x) {
 
       links: [], videos: [], pdfs: [], notes: []
     },
+
+    /* ==================================================================
+       Weeks 5-7 are commented out below.
+       They will be enabled as content is finalised week by week.
+       To publish a week, move the closing comment delimiter
+       (the asterisk-slash) below that week.
+       ==================================================================
 
     // ============================================================
     // WEEK 5 — Graphs: Foundations
@@ -11549,7 +11549,7 @@ void stress() {
     }
 
     ==================================================================
-    End of commented-out weeks 4-7.
+    End of commented-out weeks 5-7.
     ================================================================== */
 
   ]
