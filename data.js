@@ -5781,7 +5781,7 @@ int kthSmallest(Node* root, int K) {
             "Inserting unbalanced data into a plain BST → O(n) per op — switch to std::set for production.",
             "Returning the wrong subtree after deletion — always reassign root->left or root->right to the recursive result."
           ],
-          videoId: "ScdwdSCnXDU",
+          videoId: "RuF7dPfj27Q",
           videoSearch: "binary search tree operations"
         },
         {
@@ -5947,7 +5947,7 @@ int lcaBL(int u, int v) {
             "Trying to compute LCA top-down without storing intermediate state — the recursive bottom-up returns naturally.",
             "Binary-lifting implementations: off-by-one on the LOG cap, or forgetting to special-case u == v."
           ],
-          videoId: "JW-9nhktGGA",
+          videoId: "oX5D0uKOMck",
           videoSearch: "lowest common ancestor binary tree"
         },
         {
