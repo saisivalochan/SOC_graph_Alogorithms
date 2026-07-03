@@ -6693,13 +6693,6 @@ int maxXor(BTrie* root, int x) {
       links: [], videos: [], pdfs: [], notes: []
     },
 
-    /* ==================================================================
-       Weeks 5-7 are commented out below.
-       They will be enabled as content is finalised week by week.
-       To publish a week, move the closing comment delimiter
-       (the asterisk-slash) below that week.
-       ==================================================================
-
     // ============================================================
     // WEEK 5 — Graphs: Foundations
     // ============================================================
@@ -7879,6 +7872,13 @@ int firstConflict(int n, vector<vector<int>>& adj) {
 
       links: [], videos: [], pdfs: [], notes: []
     },
+
+    /* ==================================================================
+       Weeks 6-7 are commented out below.
+       They will be enabled as content is finalised week by week.
+       To publish a week, move the closing comment delimiter
+       (the asterisk-slash) below that week.
+       ==================================================================
 
     // ============================================================
     // WEEK 6 — Graphs: Advanced
@@ -11549,7 +11549,7 @@ void stress() {
     }
 
     ==================================================================
-    End of commented-out weeks 5-7.
+    End of commented-out weeks 6-7.
     ================================================================== */
 
   ]
