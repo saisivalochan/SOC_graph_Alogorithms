@@ -6902,7 +6902,7 @@ for (auto& f : friends["alice"]) cout << f << " ";`
             "Iterating an edge list to find a vertex's neighbours — O(E) per call; switch to list/matrix.",
             "Using vector<set<int>> 'just in case you need to dedup' — adds log factor for usually no reason."
           ],
-          videoId: "3pr9Ce9vECc",
+          videoId: "RpgyCJBbl5E",
           videoSearch: "graph representation adjacency list matrix"
         },
         {
@@ -7160,7 +7160,7 @@ O(V + E) time, O(V) space (queue + visited array). For a grid with R × C cells,
             "Confusing 'distance to NEAREST source' (multi-source BFS) with 'reachable from one source' (single-source).",
             "BFS on a weighted graph (non-unit weights) — gives WRONG shortest paths. Use Dijkstra."
           ],
-          videoId: "geOBaNYYInc",
+          videoId: "scQITTLgFJo",
           videoSearch: "bfs breadth first search graph"
         },
         {
@@ -7404,7 +7404,7 @@ int numIslands(vector<vector<char>>& g) {
             "Modifying the adjacency list during DFS — iterators invalidate.",
             "Topological sort attempted on a graph with cycles — silent garbage output."
           ],
-          videoId: "GmZNp9_-imM",
+          videoId: "3czYbhac160",
           videoSearch: "dfs depth first search graph"
         },
         {
@@ -7872,13 +7872,6 @@ int firstConflict(int n, vector<vector<int>>& adj) {
 
       links: [], videos: [], pdfs: [], notes: []
     },
-
-    /* ==================================================================
-       Weeks 6-7 are commented out below.
-       They will be enabled as content is finalised week by week.
-       To publish a week, move the closing comment delimiter
-       (the asterisk-slash) below that week.
-       ==================================================================
 
     // ============================================================
     // WEEK 6 — Graphs: Advanced
@@ -9284,6 +9277,13 @@ vector<int> mstClustering(int n, vector<tuple<int,int,int>>& edges, int K) {
 
       links: [], videos: [], pdfs: [], notes: []
     },
+
+    /* ==================================================================
+       Week 7 is commented out below.
+       It will be enabled as content is finalised.
+       To publish, move the closing comment delimiter
+       (the asterisk-slash) below the week.
+       ==================================================================
 
     // ============================================================
     // WEEK 7 — Dynamic Programming
@@ -11549,7 +11549,7 @@ void stress() {
     }
 
     ==================================================================
-    End of commented-out weeks 6-7.
+    End of commented-out week 7.
     ================================================================== */
 
   ]
