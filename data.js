@@ -9502,8 +9502,7 @@ c............cG`
             "Forgetting the sanity checks: dist[i][j] == dist[j][i] and dist[i][i] == 0.",
             "Recomputing pair distances inside the DFS loop instead of using the precomputed matrix.",
             "Off-by-one in the K+2 matrix indices (S is 0, coins are 1..K, G is K+1 — pick a convention and stick to it)."
-          ],
-          videoSearch: "bfs dfs dijkstra a star pathfinding project"
+          ]
         }
       ],
 
