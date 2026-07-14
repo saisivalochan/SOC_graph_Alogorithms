@@ -9506,7 +9506,7 @@ c............cG`
         },
         {
           name: "Video",
-          explanation: `Record a short video (5-10 minutes) explaining what you learned building this project. Walk through your GitHub repository, show each of the four algorithms in your source code, demo the program running on your test mazes, and reflect on how you approached the problem.
+          explanation: `Record a short video explaining what you learned building this project. Walk through your GitHub repository, show each of the four algorithms in your source code, demo the program running on your test mazes, and reflect on how you approached the problem.
 
 ## What to include
 
@@ -9520,11 +9520,7 @@ Talk through your best-so-far pruning in the DFS coin-ordering step — why it's
 
 Compare A* versus Dijkstra expansion counts from your report. Explain WHY A* expands fewer cells.
 
-Close with what was hardest, what surprised you, and one thing you would do differently.
-
-## Deliverable
-
-Upload the video as an unlisted YouTube link (or Loom, Google Drive, or any streaming platform). Paste the link into your project README.md under a "Demo Video" heading.`
+Close with what was hardest, what surprised you, and one thing you would do differently.`
         }
       ],
 
