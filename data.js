@@ -9506,8 +9506,25 @@ c............cG`
         },
         {
           name: "Video",
-          explanation: "Walkthrough of BFS, DFS, Dijkstra, and A* running side by side on a maze — the exact algorithm mix this project asks you to build.",
-          videoSearch: "bfs dfs dijkstra a star pathfinding visualization"
+          explanation: `Record a short video (5-10 minutes) explaining what you learned building this project. Walk through your GitHub repository, show each of the four algorithms in your source code, demo the program running on your test mazes, and reflect on how you approached the problem.
+
+## What to include
+
+Tour of your GitHub repository — show the file structure, the test_mazes folder, and the README.
+
+Walk through each of the four algorithm implementations in your source file. Point to the key lines that make each algorithm distinctive: the queue in BFS, the recursion or stack in DFS, the priority queue in Dijkstra, and the heuristic in A*.
+
+Run your program live on at least the tiny 2-coin maze and the weighted 4-coin maze. Explain what the output means.
+
+Talk through your best-so-far pruning in the DFS coin-ordering step — why it's necessary, and how much faster it makes the 8-coin stress test.
+
+Compare A* versus Dijkstra expansion counts from your report. Explain WHY A* expands fewer cells.
+
+Close with what was hardest, what surprised you, and one thing you would do differently.
+
+## Deliverable
+
+Upload the video as an unlisted YouTube link (or Loom, Google Drive, or any streaming platform). Paste the link into your project README.md under a "Demo Video" heading.`
         }
       ],
 
