@@ -9503,6 +9503,11 @@ c............cG`
             "Recomputing pair distances inside the DFS loop instead of using the precomputed matrix.",
             "Off-by-one in the K+2 matrix indices (S is 0, coins are 1..K, G is K+1 — pick a convention and stick to it)."
           ]
+        },
+        {
+          name: "Video",
+          explanation: "Walkthrough of BFS, DFS, Dijkstra, and A* running side by side on a maze — the exact algorithm mix this project asks you to build.",
+          videoSearch: "bfs dfs dijkstra a star pathfinding visualization"
         }
       ],
 
